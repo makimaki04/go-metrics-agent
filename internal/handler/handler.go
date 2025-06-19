@@ -29,7 +29,7 @@ func (h *Handler) HandleReq(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	urlParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(urlParts) != 4 {
-		respondWithError(w, http.StatusBadRequest, `{"error": "URL must be in format /update/<type>/<name>/<value>"}`)
+		respondWithError(w, http.StatusNotFound, `{"error": "metric ID is required"}`)
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	metricValue := urlParts[3]
 
 	if metric.ID == "" {
-		respondWithError(w, http.StatusNotFound, `{"error": "metric id is required"}`)
+		respondWithError(w, http.StatusNotFound, `{"error": "metric ID is required"}`)
 		return
 	}
 
