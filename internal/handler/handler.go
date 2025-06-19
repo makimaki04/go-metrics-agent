@@ -3,54 +3,76 @@ package handler
 import (
 	"net/http"
 	"strconv"
-	"github.com/makimaki04/go-metrics-agent.git/internal/model"
+	"strings"
+
+	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
+	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 )
 
-func MetricsHandler(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	service service.MetricsService
+}
+
+func NewHandler(service service.MetricsService) *Handler {
+	return &Handler{service: service}
+}
+
+func (h *Handler) HandleReq(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte(`{"error": "method not allowed"}`))
+		respondWithError(w, http.StatusMethodNotAllowed, `{"error": "method not allowed"}`)
 		return
 	}
-	PostMetricsHandler(w, r)
+	h.PostMetric(w, r)
 
 }
 
-func PostMetricsHandler(w http.ResponseWriter, r *http.Request) {
-	metric := models.Metrics{
-		ID:    r.FormValue("id"),
-		MType: r.FormValue("type"),
+func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
+	urlParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(urlParts) != 4 {
+		respondWithError(w, http.StatusBadRequest, `{"error": "URL must be in format /update/<type>/<name>/<value>"}`)
+		return
 	}
 
+	metric := models.Metrics{
+		ID: urlParts[2],
+		MType: urlParts[1],
+	}
+	metricValue := urlParts[3]
+
 	if metric.ID == "" {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error": "metric id is required"}`))
+		respondWithError(w, http.StatusNotFound, `{"error": "metric id is required"}`)
 		return
 	}
 
 	switch metric.MType {
 	case models.Counter:
-		deltaStr := r.FormValue("delta")
-		if deltaStr == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "delta is required for counter"}`))
-		}
-
-		delta, err := strconv.ParseInt(deltaStr, 10, 64)
+		delta, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "invalid delra value"}`))
+			respondWithError(w, http.StatusBadRequest, `{"error": "invalid delta value"}`)
+			return
 		}
 		metric.Delta = &delta
 
+		h.service.UpdateCounter(metric.ID, *metric.Delta)
 	case models.Gauge:
+		value, err := strconv.ParseFloat(metricValue, 64)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, `{"error": "invalid metric's value"}`)
+			return
+		}
+		metric.Value = &value
 
+		h.service.UpdateGauge(metric.ID, *metric.Value)
 	default:
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "unknown metric type"}`))
+		respondWithError(w, http.StatusBadRequest, `{"error": "unknown metric type"}`)
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+}
 
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	w.WriteHeader(code)
+	w.Write([]byte(message))
 }
