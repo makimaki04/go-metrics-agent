@@ -34,15 +34,15 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metric := models.Metrics{
-		ID: urlParts[2],
+		ID:    urlParts[2],
 		MType: urlParts[1],
 	}
 	metricValue := urlParts[3]
 
-	if metric.ID == "" {
-		respondWithError(w, http.StatusNotFound, `{"error": "metric ID is required"}`)
-		return
-	}
+	// if metric.ID == "" {
+	// 	respondWithError(w, http.StatusNotFound, `{"error": "metric ID is required"}`)
+	// 	return
+	// }
 
 	switch metric.MType {
 	case models.Counter:

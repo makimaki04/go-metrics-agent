@@ -5,12 +5,12 @@ type MemStorage struct {
 	counters map[string]int64
 }
 
-type Storage interface {
+type Repository interface {
 	SetGauge(name string, value float64)
 	SetCounter(name string, value int64)
 }
 
-func NewStorage() Storage {
+func NewStorage() Repository {
 	return &MemStorage{
 		gauges:   make(map[string]float64),
 		counters: make(map[string]int64),

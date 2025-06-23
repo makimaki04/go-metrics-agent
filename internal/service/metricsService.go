@@ -8,10 +8,10 @@ type MetricsService interface {
 }
 
 type Service struct {
-	storage repository.Storage
+	storage repository.Repository
 }
 
-func NewService(storage repository.Storage) MetricsService {
+func NewService(storage repository.Repository) MetricsService {
 	return &Service{storage: storage}
 }
 
