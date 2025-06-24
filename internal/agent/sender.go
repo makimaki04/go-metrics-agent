@@ -21,14 +21,14 @@ func (s Sender) SendMetrics(metrics map[string]models.Metrics) {
 	for _, m := range metrics {
 		var value string
 		switch m.MType {
-		case "gauge": 
+		case "gauge":
 			value = fmt.Sprintf("%v", *m.Value)
-		case "counter": 
+		case "counter":
 			value = fmt.Sprintf("%d", *m.Delta)
 		default:
 			continue
 		}
-		
+
 		url := fmt.Sprintf("%s/update/%s/%s/%s", s.baseUrl, m.MType, m.ID, value)
 
 		request, err := http.NewRequest(http.MethodPost, url, nil)
