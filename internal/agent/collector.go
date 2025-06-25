@@ -8,11 +8,15 @@ import (
 )
 
 type Collector struct {
-	storage   Storage
+	storage   CollectorStorageInterface
 	pollCount int64
 }
 
-func NewCollector(storage Storage) *Collector {
+type CollectorStorageInterface interface {
+	SetMetric(name string, metric models.Metrics)
+}
+
+func NewCollector(storage CollectorStorageInterface) *Collector {
 	return &Collector{storage: storage}
 }
 
@@ -66,11 +70,10 @@ func (c *Collector) CollcetMetrics() {
 		Delta: &c.pollCount,
 	})
 
-	randomValue := rand.Float64()
+	randomValue := rand.Float64() * 100
 	c.storage.SetMetric("RandomValue", models.Metrics{
 		ID:    "RandomValue",
 		MType: "gauge",
 		Value: &randomValue,
 	})
-
 }

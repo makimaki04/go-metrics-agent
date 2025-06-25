@@ -11,13 +11,19 @@ import (
 type Sender struct {
 	client  *http.Client
 	baseUrl string
+	storage SenderStorageIntreface
 }
 
-func NewSender(client *http.Client, url string) *Sender {
-	return &Sender{client: client, baseUrl: url}
+type SenderStorageIntreface interface {
+	GetAll() map[string]models.Metrics
 }
 
-func (s Sender) SendMetrics(metrics map[string]models.Metrics) {
+func NewSender(client *http.Client, url string, storage SenderStorageIntreface) *Sender {
+	return &Sender{client: client, baseUrl: url, storage: storage}
+}
+
+func (s Sender) SendMetrics() {
+	metrics := s.storage.GetAll()
 	for _, m := range metrics {
 		var value string
 		switch m.MType {

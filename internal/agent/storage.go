@@ -6,12 +6,7 @@ type LocalStorage struct {
 	metrics map[string]models.Metrics
 }
 
-type Storage interface {
-	SetMetric(name string, metric models.Metrics)
-	GetAll() map[string]models.Metrics
-}
-
-func NewLocalStorage() Storage {
+func NewLocalStorage() *LocalStorage {
 	return &LocalStorage{
 		metrics: make(map[string]models.Metrics),
 	}
@@ -19,6 +14,11 @@ func NewLocalStorage() Storage {
 
 func (l *LocalStorage) SetMetric(name string, metric models.Metrics) {
 	l.metrics[name] = models.Metrics(metric)
+}
+
+func (l *LocalStorage) GetMetric(name string) (models.Metrics, bool) {
+	metric, ok := l.metrics[name]
+	return metric, ok
 }
 
 func (l *LocalStorage) GetAll() map[string]models.Metrics {

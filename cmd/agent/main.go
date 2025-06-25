@@ -12,23 +12,22 @@ func main() {
 	collector := agent.NewCollector(storage)
 	client := &http.Client{}
 	url := "http://localhost:8080"
-	sender := agent.NewSender(client, url)
+	sender := agent.NewSender(client, url, storage)
 
-	go func () {
-		for {
+	collectTicker := time.NewTicker(2 * time.Second)
+	sendTicker := time.NewTicker(10 * time.Second)
+
+	defer func() {
+		collectTicker.Stop()
+		sendTicker.Stop()
+	}()
+
+	for {
+		select {
+		case <- collectTicker.C:
 			collector.CollcetMetrics()
-			time.Sleep(2 * time.Second)
+		case <- sendTicker.C:
+			sender.SendMetrics()
 		}
-	}()
-	
-	go func() {
-		for {
-			metrics := storage.GetAll()
-			sender.SendMetrics(metrics)
-			time.Sleep(10 * time.Second)
-		}
-	}()
-	
-	select {}
-	
+	}
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,6 +71,7 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+	log.Printf("Handle %s %s = %s", metric.MType, metric.ID, metricValue)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
