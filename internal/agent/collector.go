@@ -20,7 +20,7 @@ func NewCollector(storage CollectorStorageInterface) *Collector {
 	return &Collector{storage: storage}
 }
 
-func (c *Collector) CollcetMetrics() {
+func (c *Collector) CollectMetrics() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
@@ -76,4 +76,8 @@ func (c *Collector) CollcetMetrics() {
 		MType: "gauge",
 		Value: &randomValue,
 	})
+}
+
+func (c *Collector) ResetPollCount() {
+	c.pollCount = 0
 }

@@ -3,13 +3,13 @@ package agent
 import (
 	"fmt"
 	"log"
-	"net/http"
 
+	"github.com/go-resty/resty/v2"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 )
 
 type Sender struct {
-	client  *http.Client
+	client  *resty.Client
 	baseUrl string
 	storage SenderStorageIntreface
 }
@@ -18,7 +18,7 @@ type SenderStorageIntreface interface {
 	GetAll() map[string]models.Metrics
 }
 
-func NewSender(client *http.Client, url string, storage SenderStorageIntreface) *Sender {
+func NewSender(client *resty.Client, url string, storage SenderStorageIntreface) *Sender {
 	return &Sender{client: client, baseUrl: url, storage: storage}
 }
 
@@ -37,20 +37,14 @@ func (s Sender) SendMetrics() {
 
 		url := fmt.Sprintf("%s/update/%s/%s/%s", s.baseUrl, m.MType, m.ID, value)
 
-		request, err := http.NewRequest(http.MethodPost, url, nil)
-		if err != nil {
-			log.Printf("failed to create request for metric %s: %v", m.ID, err)
-			continue
-		}
-
-		request.Header.Set("Content-Type", "text/plain")
-
-		response, err := s.client.Do(request)
+		response, err := s.client.R().
+			SetHeader("Content-Type", "text/plain").
+			Post(url)
 		if err != nil {
 			log.Printf("failed to send metric %s: %v", m.ID, err)
 			continue
 		}
 		log.Printf("Sending %s %s = %s", m.MType, m.ID, value)
-		response.Body.Close()
+		log.Printf("%v", response.Status())
 	}
 }

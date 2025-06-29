@@ -1,16 +1,16 @@
 package main
 
 import (
-	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/makimaki04/go-metrics-agent.git/internal/agent"
 )
 
 func main() {
 	storage := agent.NewLocalStorage()
 	collector := agent.NewCollector(storage)
-	client := &http.Client{}
+	client := resty.New()
 	url := "http://localhost:8080"
 	sender := agent.NewSender(client, url, storage)
 
@@ -24,10 +24,11 @@ func main() {
 
 	for {
 		select {
-		case <- collectTicker.C:
-			collector.CollcetMetrics()
-		case <- sendTicker.C:
+		case <-collectTicker.C:
+			collector.CollectMetrics()
+		case <-sendTicker.C:
 			sender.SendMetrics()
+			collector.ResetPollCount()
 		}
 	}
 }

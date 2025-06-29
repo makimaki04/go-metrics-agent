@@ -10,6 +10,8 @@ type Repository interface {
 	SetCounter(name string, value int64)
 	GetGauge(name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
+	GetAllGauges() map[string]float64
+	GetAllCounters() map[string]int64
 }
 
 func NewStorage() Repository {
@@ -28,6 +30,14 @@ func (m *MemStorage) GetGauge(name string) (float64, bool) {
 	return value, ok
 }
 
+func (m *MemStorage) GetAllGauges() map[string]float64 {
+	copy := make(map[string]float64)
+	for k,v := range m.gauges {
+		copy[k] = v
+	}
+	return copy
+}
+
 func (m *MemStorage) SetCounter(name string, value int64) {
 	m.counters[name] += value
 }
@@ -37,3 +47,11 @@ func (m *MemStorage) GetCounter(name string) (int64, bool) {
 	return value, ok
 }
 
+func (m *MemStorage) GetAllCounters() map[string]int64 {
+	copy := make(map[string]int64)
+	for k,v := range m.counters {
+		copy[k] = v
+	}
+	return copy
+}
+ 

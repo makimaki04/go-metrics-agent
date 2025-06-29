@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestHandler_PostMetric(t *testing.T) {
 		},
 		{
 			name:    "negative gauge test without ID",
-			request: "/update/gauge/CMD/",
+			request: "/update/gauge//20.55",
 			want: want{
 				code:     404,
 				response: `{"error": "metric ID is required"}`,
@@ -59,7 +60,7 @@ func TestHandler_PostMetric(t *testing.T) {
 		},
 		{
 			name:    "negative counter test without ID",
-			request: "/update/counter/CMD/",
+			request: "/update/counter//20",
 			want: want{
 				code:     404,
 				response: `{"error": "metric ID is required"}`,
@@ -79,9 +80,13 @@ func TestHandler_PostMetric(t *testing.T) {
 			storage := repository.NewStorage()
 			service := service.NewService(storage)
 			handler := NewHandler(service)
-			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
+
+			r := chi.NewRouter()
+			r.Post("/update/{MType}/{ID}/{value}", handler.PostMetric)
+
+			req := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
-			handler.HandleReq(w, request)
+			r.ServeHTTP(w, req)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
