@@ -17,7 +17,7 @@ type agentConfig struct {
 
 func main() {
 	var agentConfig agentConfig
-	flag.StringVar(&agentConfig.port, "a", "localhost:8080", "Server port")
+	flag.StringVar(&agentConfig.port, "a", ":8080", "Server port")
 	flag.DurationVar(&agentConfig.reportInterval, "r", 10 * time.Second, "Report interval (e.g. 10s, 30s)")
 	flag.DurationVar(&agentConfig.pollInterval, "p", 2 * time.Second, "Poll interval (e.g. 2s, 10s)")
 	flag.Parse()
