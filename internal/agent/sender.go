@@ -10,7 +10,7 @@ import (
 
 type Sender struct {
 	client  *http.Client
-	baseUrl string
+	baseURL string
 	storage SenderStorageIntreface
 }
 
@@ -19,7 +19,7 @@ type SenderStorageIntreface interface {
 }
 
 func NewSender(client *http.Client, url string, storage SenderStorageIntreface) *Sender {
-	return &Sender{client: client, baseUrl: url, storage: storage}
+	return &Sender{client: client, baseURL: url, storage: storage}
 }
 
 func (s Sender) SendMetrics() {
@@ -35,7 +35,7 @@ func (s Sender) SendMetrics() {
 			continue
 		}
 
-		url := fmt.Sprintf("%s/update/%s/%s/%s", s.baseUrl, m.MType, m.ID, value)
+		url := fmt.Sprintf("%s/update/%s/%s/%s", s.baseURL, m.MType, m.ID, value)
 
 		request, err := http.NewRequest(http.MethodPost, url, nil)
 		if err != nil {
