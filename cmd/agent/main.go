@@ -11,15 +11,15 @@ import (
 
 type agentConfig struct {
 	port string
-	reportInterval time.Duration
-	pollInterval time.Duration
+	reportInterval int
+	pollInterval int
 }
 
 func main() {
 	var agentConfig agentConfig
 	flag.StringVar(&agentConfig.port, "a", "localhost:8080", "Server port")
-	flag.DurationVar(&agentConfig.reportInterval, "r", 10 * time.Second, "Report interval (e.g. 10s, 30s)")
-	flag.DurationVar(&agentConfig.pollInterval, "p", 2 * time.Second, "Poll interval (e.g. 2s, 10s)")
+	flag.IntVar(&agentConfig.reportInterval, "r", 10, "Report interval in seconds")
+	flag.IntVar(&agentConfig.pollInterval, "p", 2, "Poll interval in seconds")
 	flag.Parse()
 
 	url := fmt.Sprintf(`http://%s`, agentConfig.port)
@@ -28,8 +28,8 @@ func main() {
 	client := resty.New()
 	sender := agent.NewSender(client, url, storage)
 
-	collectTicker := time.NewTicker(agentConfig.pollInterval)
-	sendTicker := time.NewTicker(agentConfig.reportInterval)
+	collectTicker := time.NewTicker(time.Duration(agentConfig.pollInterval) * time.Second)
+	sendTicker := time.NewTicker(time.Duration(agentConfig.reportInterval) * time.Second)
 
 	defer func() {
 		collectTicker.Stop()
