@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -9,7 +11,16 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 )
 
+type serverConfig struct {
+	port int
+}
+
 func main() {
+	var serverConfig serverConfig
+	flag.IntVar(&serverConfig.port, "a", 8080, "Server port")
+	flag.Parse()
+
+	port := fmt.Sprintf(`:%d`, serverConfig.port)
 	storage := repository.NewStorage()
 	service := service.NewService(storage)
 	handler := handler.NewHandler(service)
@@ -23,7 +34,7 @@ func main() {
 			r.Post("/", handler.HandleReq)
 		})
 	})
-	err := http.ListenAndServe(`:8080`, r)
+	err := http.ListenAndServe(port, r)
 	if err != nil {
 		panic(err)
 	}
