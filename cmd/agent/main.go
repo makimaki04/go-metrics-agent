@@ -10,19 +10,19 @@ import (
 )
 
 type agentConfig struct {
-	port int
+	port string
 	reportInterval time.Duration
 	pollInterval time.Duration
 }
 
 func main() {
 	var agentConfig agentConfig
-	flag.IntVar(&agentConfig.port, "a", 8080, "Server port")
+	flag.StringVar(&agentConfig.port, "a", "localhost:8080", "Server port")
 	flag.DurationVar(&agentConfig.reportInterval, "r", 10 * time.Second, "Report interval (e.g. 10s, 30s)")
 	flag.DurationVar(&agentConfig.pollInterval, "p", 2 * time.Second, "Poll interval (e.g. 2s, 10s)")
 	flag.Parse()
 
-	url := fmt.Sprintf(`http://localhost:%d`, agentConfig.port)
+	url := fmt.Sprintf(`http://%s`, agentConfig.port)
 	storage := agent.NewLocalStorage()
 	collector := agent.NewCollector(storage)
 	client := resty.New()

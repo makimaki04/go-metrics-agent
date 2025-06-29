@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,15 +11,14 @@ import (
 )
 
 type serverConfig struct {
-	port int
+	port string
 }
 
 func main() {
 	var serverConfig serverConfig
-	flag.IntVar(&serverConfig.port, "a", 8080, "Server port")
+	flag.StringVar(&serverConfig.port, "a", "localhost:8080", "Server port")
 	flag.Parse()
 
-	port := fmt.Sprintf(`:%d`, serverConfig.port)
 	storage := repository.NewStorage()
 	service := service.NewService(storage)
 	handler := handler.NewHandler(service)
@@ -34,7 +32,7 @@ func main() {
 			r.Post("/", handler.HandleReq)
 		})
 	})
-	err := http.ListenAndServe(port, r)
+	err := http.ListenAndServe(serverConfig.port, r)
 	if err != nil {
 		panic(err)
 	}
