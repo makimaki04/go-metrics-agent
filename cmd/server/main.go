@@ -16,7 +16,7 @@ type serverConfig struct {
 
 func main() {
 	var serverConfig serverConfig
-	flag.StringVar(&serverConfig.port, "a", "localhost:8080", "Server port")
+	flag.StringVar(&serverConfig.port, "a", ":8080", "Server port")
 	flag.Parse()
 
 	storage := repository.NewStorage()
