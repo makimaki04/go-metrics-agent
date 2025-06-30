@@ -179,3 +179,65 @@ func TestMemStorage_GetCounter(t *testing.T) {
 		})
 	}
 }
+
+func TestMemStorage_GetAllGauges(t *testing.T) {
+	type mock struct {
+		name  string
+		value float64
+	}
+	tests := []struct {
+		name string
+		mock mock
+		want map[string]float64
+	}{
+		{
+			name: "Simple test",
+			mock: mock{
+				name:  "CMD",
+				value: 12.34,
+			},
+			want: map[string]float64{
+				"CMD": 12.34,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := NewStorage()
+			storage.SetGauge(tt.mock.name, tt.mock.value)
+			gauges := storage.GetAllGauges()
+			assert.Equal(t, tt.want, gauges)
+		})
+	}
+}
+
+func TestMemStorage_GetAllCounters(t *testing.T) {
+	type mock struct {
+		name  string
+		value int64
+	}
+	tests := []struct {
+		name string
+		mock mock
+		want map[string]int64
+	}{
+		{
+			name: "Simple test",
+			mock: mock{
+				name:  "PollCount",
+				value: 5,
+			},
+			want: map[string]int64{
+				"PollCount": 5,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := NewStorage()
+			storage.SetCounter(tt.mock.name, tt.mock.value)
+			gauges := storage.GetAllCounters()
+			assert.Equal(t, tt.want, gauges)
+		})
+	}
+}

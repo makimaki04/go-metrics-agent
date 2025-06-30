@@ -92,8 +92,8 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		Counters: counters,
 		Gauges: gauges,
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8") //обязательно ли прописывать заголовки? Насколько я знаю, Execute автоматически выставляет text/html; charset=utf-8
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8") //обязательно ли прописывать заголовки, Execute автоматически выставляет text/html; charset=utf-8 насколько я знаю
 	err = tmpl.Execute(w, templateData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

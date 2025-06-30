@@ -100,3 +100,149 @@ func TestService_UpdateGauge(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetGauge(t *testing.T) {
+	type input struct {
+		name  string
+		value float64
+	}
+	tests := []struct {
+		name      string
+		input     input
+		key       string
+		wantValue float64
+		wantOk    bool
+	}{
+		{
+			name: "Gauge exists",
+			input: input{
+				name:  "CPU",
+				value: 75.5,
+			},
+			key:       "CPU",
+			wantValue: 75.5,
+			wantOk:    true,
+		},
+		{
+			name:   "Gauge does not exist",
+			key:    "UNKNOWN",
+			wantOk: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := repository.NewStorage()
+			service := NewService(storage)
+			service.UpdateGauge(tt.input.name, tt.input.value)
+
+			value, ok := service.GetGauge(tt.key)
+			assert.Equal(t, tt.wantValue, value)
+			assert.Equal(t, tt.wantOk, ok)
+		})
+	}
+}
+
+func TestService_GetCounter(t *testing.T) {
+	type input struct {
+		name  string
+		value int64
+	}
+	tests := []struct {
+		name      string
+		input     input
+		key       string
+		wantValue int64
+		wantOk    bool
+	}{
+		{
+			name: "Counter exists",
+			input: input{
+				name:  "PollCount",
+				value: 5,
+			},
+			key:       "PollCount",
+			wantValue: 5,
+			wantOk:    true,
+		},
+		{
+			name:   "Counter does not exist",
+			key:    "UNKNOWN",
+			wantOk: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := repository.NewStorage()
+			service := NewService(storage)
+			service.UpdateCounter(tt.input.name, tt.input.value)
+
+			value, ok := service.GetCounter(tt.key)
+			assert.Equal(t, tt.wantValue, value)
+			assert.Equal(t, tt.wantOk, ok)
+		})
+	}
+}
+
+func TestService_GetAllCounters(t *testing.T) {
+	type mock struct {
+		name  string
+		value int64
+	}
+	tests := []struct {
+		name string
+		mock mock
+		want map[string]int64
+	}{
+		{
+			name: "Simple test",
+			mock: mock{
+				name:  "PollCount",
+				value: 5,
+			},
+			want: map[string]int64{
+				"PollCount": 5,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := repository.NewStorage()
+			service := NewService(storage)
+			service.UpdateCounter(tt.mock.name, tt.mock.value)
+			gauges := service.GetAllCounters()
+			assert.Equal(t, tt.want, gauges)
+		})
+	}
+}
+
+func TestService_GetAllGauges(t *testing.T) {
+		type mock struct {
+		name  string
+		value float64
+	}
+	tests := []struct {
+		name string
+		mock mock
+		want map[string]float64
+	}{
+		{
+			name: "Simple test",
+			mock: mock{
+				name:  "CMD",
+				value: 12.34,
+			},
+			want: map[string]float64{
+				"CMD": 12.34,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := repository.NewStorage()
+			service := NewService(storage)
+			service.UpdateGauge(tt.mock.name, tt.mock.value)
+			gauges := service.GetAllGauges()
+			assert.Equal(t, tt.want, gauges)
+		})
+	}
+}
