@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -41,8 +42,12 @@ func main() {
 		case <-collectTicker.C:
 			collector.CollectMetrics()
 		case <-sendTicker.C:
-			sender.SendMetrics()
-			collector.ResetPollCount()
+			err := sender.SendMetrics()
+			if err != nil {
+				log.Printf("error sending data: %v", err)
+			} else {
+				collector.ResetPollCount()
+			}
 		}
 	}
 }

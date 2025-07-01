@@ -3,6 +3,7 @@ package agent
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/go-resty/resty/v2"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -22,7 +23,7 @@ func NewSender(client *resty.Client, url string, storage SenderStorageIntreface)
 	return &Sender{client: client, baseURL: url, storage: storage}
 }
 
-func (s Sender) SendMetrics() {
+func (s Sender) SendMetrics() error{
 	metrics := s.storage.GetAll()
 	for _, m := range metrics {
 		var value string
@@ -42,9 +43,14 @@ func (s Sender) SendMetrics() {
 			Post(url)
 		if err != nil {
 			log.Printf("failed to send metric %s: %v", m.ID, err)
-			continue
+			return err
+		}
+
+		if response.StatusCode() != http.StatusOK {
+			return fmt.Errorf("something went wrong. bad status: %s", response.Status())	
 		}
 		log.Printf("Sending %s %s = %s", m.MType, m.ID, value)
 		log.Printf("%v", response.Status())
 	}
+	return nil
 }
