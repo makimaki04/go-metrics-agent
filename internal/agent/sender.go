@@ -23,7 +23,7 @@ func NewSender(client *resty.Client, url string, storage SenderStorageIntreface)
 	return &Sender{client: client, baseURL: url, storage: storage}
 }
 
-func (s Sender) SendMetrics() error{
+func (s Sender) SendMetrics() error {
 	metrics := s.storage.GetAll()
 	for _, m := range metrics {
 		var value string
@@ -47,7 +47,7 @@ func (s Sender) SendMetrics() error{
 		}
 
 		if response.StatusCode() != http.StatusOK {
-			return fmt.Errorf("something went wrong. bad status: %s", response.Status())	
+			return fmt.Errorf("something went wrong. bad status: %s", response.Status())
 		}
 		log.Printf("Sending %s %s = %s", m.MType, m.ID, value)
 		log.Printf("%v", response.Status())
