@@ -3,7 +3,6 @@ package handler
 import (
 	"html/template"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"github.com/go-chi/chi/v5"
