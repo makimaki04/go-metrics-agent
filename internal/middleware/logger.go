@@ -15,7 +15,7 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 
 		responseData := &responseData {
 			status: 0,
-				size: 0,
+			size: 0,
 		}
 
 		lw := loggingResponseWriter {
@@ -27,11 +27,11 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 		
 		duration := time.Since(start)
 
-		logger.Sugar().Infof(
+		logger.Sugar().Infoln(
 			"uri", uri,
 			"method", method,
 			"status", responseData.status,
-			"code", responseData.size,
+			"size", responseData.size,
 			"duration", duration,
 		)
 	}
@@ -57,7 +57,7 @@ func (l *loggingResponseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-func (l *loggingResponseWriter) writeHeader(statuceCode int) {
+func (l *loggingResponseWriter) WriteHeader(statuceCode int) {
 	l.ResponseWriter.WriteHeader(statuceCode)
 	l.responseData.status = statuceCode
 }
