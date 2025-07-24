@@ -27,12 +27,19 @@ func main() {
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(handler.GetAllMetrics, handlersLogger))
-		r.Route("/value/{MType}/{ID}", func(r chi.Router) {
+		r.Route("/value", func(r chi.Router) {
+			r.Post("/",  middleware.WithLogging(handler.PostMetrcInfo, handlersLogger))
+			r.Route("/value/{MType}/{ID}", func(r chi.Router) {
 			r.Get("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
 		})
-		r.Route("/update/{MType}/{ID}/{value}", func(r chi.Router) {
-			r.Post("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
 		})
+		r.Route("/update", func(r chi.Router) {
+			r.Post("/",  middleware.WithLogging(handler.UpdateMetric, handlersLogger))
+			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
+				r.Post("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
+			})
+		})
+		
 	})
 	err := http.ListenAndServe(cfg.Address, r)
 	if err != nil {

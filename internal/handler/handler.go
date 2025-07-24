@@ -1,10 +1,13 @@
 package handler
 
 import (
-	"html/template"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
@@ -91,7 +94,7 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		Counters: counters,
 		Gauges: gauges,
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8") //обязательно ли прописывать заголовки? Насколько я знаю, Execute автоматически выставляет text/html; charset=utf-8
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	err = tmpl.Execute(w, templateData)
 	if err != nil {
@@ -159,8 +162,6 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		metric.Delta = &delta
-
-		h.service.UpdateCounter(metric.ID, *metric.Delta)
 	case models.Gauge:
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
@@ -168,15 +169,80 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		metric.Value = &value
-
-		h.service.UpdateGauge(metric.ID, *metric.Value)
 	default:
 		respondWithError(w, http.StatusBadRequest, `{"error": "unknown metric type"}`)
 		return
 	}
 
+	h.service.UpdateMetric(metric)
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
+	var metric models.Metrics
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, `{"error": "empty request body"}`)
+		return
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), &metric); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "wrong body structure"}`)
+		return
+	}
+
+	h.service.UpdateMetric(metric)
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Println(metric)
+}
+
+func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
+	var metric models.Metrics
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, `{"error": "empty request body"}`)
+		return
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), &metric); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "wrong body structure"}`)
+		return
+	}
+
+	switch metric.MType {
+	case models.Counter:
+		d, ok := h.service.GetCounter(metric.ID)
+		if !ok {
+			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
+			return
+		}
+		metric.Delta = &d
+	case models.Gauge:
+		v, ok := h.service.GetGauge(metric.ID)
+		if !ok {
+			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
+			return
+		}
+		metric.Value = &v
+	}
+
+	resp, err := json.MarshalIndent(metric, "", "	")
+	if err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "empty response body"}`)
+		return
+	}
+
+	w.Header().Set("Content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
