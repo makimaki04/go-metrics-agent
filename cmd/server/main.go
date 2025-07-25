@@ -29,9 +29,9 @@ func main() {
 		r.Get("/", middleware.WithLogging(handler.GetAllMetrics, handlersLogger))
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/",  middleware.WithLogging(handler.PostMetrcInfo, handlersLogger))
-			r.Route("/value/{MType}/{ID}", func(r chi.Router) {
-			r.Get("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
-		})
+			r.Route("/{MType}/{ID}", func(r chi.Router) {
+				r.Get("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
+			})
 		})
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/",  middleware.WithLogging(handler.UpdateMetric, handlersLogger))
