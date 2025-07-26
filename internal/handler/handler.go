@@ -239,6 +239,7 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(metric)
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)

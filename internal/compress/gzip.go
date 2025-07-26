@@ -2,7 +2,6 @@ package compress
 
 import (
 	"compress/gzip"
-	"io"
 	"net/http"
 )
 
@@ -26,7 +25,9 @@ func (c *compressWriter) Write(b []byte) (int, error) {
 	return c.ResponseWriter.Write(b)
 }
 
-type compressReader struct {
-	io.ReadCloser
-	reader *gzip.Reader
+func (c *compressWriter) WriteHeader(statusCode int) {
+	if statusCode < 300 {
+		c.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+	}
+	c.ResponseWriter.WriteHeader(statusCode)
 }
