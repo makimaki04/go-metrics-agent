@@ -18,7 +18,11 @@ func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 }
 
 func (c *compressWriter) Write(b []byte) (int, error) {
-	return c.Writer.Write(b)
+	header := c.Header().Get("Content-Type")
+	if header == "application/json" || header == "text/html" {
+		return c.Writer.Write(b)
+	}
+	return c.ResponseWriter.Write(b)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
