@@ -29,8 +29,8 @@ func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 				http.Error(w, "Invalid gzip body", http.StatusBadRequest)
 				return
 			}
-			defer gr.Close()
 			r.Body = gr
+			defer gr.Close()
 		}
 
 		h.ServeHTTP(ow, r)

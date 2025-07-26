@@ -26,11 +26,11 @@ func main() {
 	handler := handler.NewHandler(service)
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Get("/", middleware.WithLogging(handler.GetAllMetrics, handlersLogger))
+		r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.GetAllMetrics), handlersLogger))
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
 			r.Route("/{MType}/{ID}", func(r chi.Router) {
-				r.Get("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
+				r.Get("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.HandleReq), handlersLogger))
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
