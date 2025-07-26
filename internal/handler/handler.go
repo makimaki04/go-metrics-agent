@@ -175,7 +175,6 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.service.UpdateMetric(metric)
-
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }

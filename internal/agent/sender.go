@@ -1,6 +1,9 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,33 +27,41 @@ func NewSender(client *resty.Client, url string, storage SenderStorageIntreface)
 }
 
 //Новая реализация отправки метрки к эндпоинту /update
-// func (s Sender) SendMetrics() error {
-// 	url := fmt.Sprintf("%s/update", s.baseURL)
-// 	metrics := s.storage.GetAll()
+func (s Sender) SendMetricsV2() error {
+	url := fmt.Sprintf("%s/update", s.baseURL)
+	metrics := s.storage.GetAll()
 
-// 	for _, m := range metrics {
-// 		resp, err := json.MarshalIndent(m, "", "	")
-// 		if err != nil {
-// 			return fmt.Errorf("json serialize error")
-// 		}
+	for _, m := range metrics {
+		var buf bytes.Buffer
+		resp, err := json.MarshalIndent(m, "", "	")
+		if err != nil {
+			return fmt.Errorf("json serialize error")
+		}
 
-// 		response, err := s.client.R().
-// 			SetHeader("Content-Type", "application/json").
-// 			SetBody(resp).
-// 			Post(url)
-// 		if err != nil {
-// 			log.Printf("failed to send metric %s: %v", m.ID, err)
-// 			return err
-// 		}
+		w := gzip.NewWriter(&buf)
+		w.Write(resp)
+		if err := w.Close(); err != nil {
+			return fmt.Errorf("gzip close error: %v", err)
+		}
 
-// 		if response.StatusCode() != http.StatusOK {
-// 			return fmt.Errorf("something went wrong. bad status: %s", response.Status())
-// 		}
-// 		log.Printf("Sending %s %s", m.MType, m.ID)
-// 		log.Printf("%v", response.Status())
-// 	}
-// 	return nil
-// }
+		response, err := s.client.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Encoding", "gzip").
+			SetBody(buf.Bytes()).
+			Post(url)
+		if err != nil {
+			log.Printf("failed to send metric %s: %v", m.ID, err)
+			return err
+		}
+
+		if response.StatusCode() != http.StatusOK {
+			return fmt.Errorf("something went wrong. bad status: %s", response.Status())
+		}
+		log.Printf("Sending %s %s", m.MType, m.ID)
+		log.Printf("%v", response.Status())
+	}
+	return nil
+}
 
 // Старая реализация к эндпоинту update/{MType}/{ID}/{value}
 func (s Sender) SendMetrics() error {

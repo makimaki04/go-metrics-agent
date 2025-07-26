@@ -12,6 +12,7 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 		start := time.Now()
 		uri := r.RequestURI
 		method := r.Method
+		headers := r.Header.Get("Accept-Encoding")
 
 		responseData := &responseData {
 			status: 0,
@@ -30,6 +31,7 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 		logger.Sugar().Infoln(
 			"uri", uri,
 			"method", method,
+			"headers", headers,
 			"status", responseData.status,
 			"size", responseData.size,
 			"duration", duration,

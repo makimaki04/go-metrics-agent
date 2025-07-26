@@ -28,13 +28,13 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(handler.GetAllMetrics, handlersLogger))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/",  middleware.WithLogging(handler.PostMetrcInfo, handlersLogger))
+			r.Post("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
 			r.Route("/{MType}/{ID}", func(r chi.Router) {
 				r.Get("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/",  middleware.WithLogging(handler.UpdateMetric, handlersLogger))
+			r.Post("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetric), handlersLogger))
 			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
 				r.Post("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
