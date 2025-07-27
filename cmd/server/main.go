@@ -80,7 +80,14 @@ func main() {
 			})
 		})
 		
-	})	
+	})
+
+	go func() {
+		err := http.ListenAndServe(cfg.Address, r)
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	if cfg.StoreInt == 0 {
 		saveMetrcisToFile(file, service, logger)
@@ -93,10 +100,6 @@ func main() {
 		}
 	}
 
-	err := http.ListenAndServe(cfg.Address, r)
-	if err != nil {
-		panic(err)
-	}
 }
 
 
