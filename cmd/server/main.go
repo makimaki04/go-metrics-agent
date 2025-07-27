@@ -88,7 +88,7 @@ func main() {
 	}()
 
 	if cfg.StoreInt == 0 {
-		saveMetrcisToFile(file, service, logger)
+		saveMetrcisToFile(service, logger)
 	} else {
 		ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
 		defer ticker.Stop()
@@ -106,7 +106,7 @@ func saveMetrcisToFile(service service.MetricsService, logger *zap.Logger) {
 	if error != nil {
 		logger.Fatal("Couldn't create or open the local storage file")
 	}
-	
+
 	allMetrics := struct {
 			Counters map[string]int64    `json:"counters"`
 			Gauges   map[string]float64  `json:"gauges"`
