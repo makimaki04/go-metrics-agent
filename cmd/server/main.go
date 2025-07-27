@@ -89,11 +89,21 @@ func main() {
 		}
 	}()
 
-	ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
-	defer ticker.Stop()
+	if cfg.StoreInt == 0 {
+		saveMetrcisToFile(file, service, logger)
+	} else {
+		ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
+		defer ticker.Stop()
 
-	for range ticker.C {
-		allMetrics := struct {
+		for range ticker.C {
+			saveMetrcisToFile(file, service, logger)
+		}
+	}
+}
+
+
+func saveMetrcisToFile(file *os.File, service service.MetricsService, logger *zap.Logger) {
+	allMetrics := struct {
 			Counters map[string]int64    `json:"counters"`
 			Gauges   map[string]float64  `json:"gauges"`
 		}{
@@ -104,24 +114,23 @@ func main() {
 		data, err := json.MarshalIndent(allMetrics, "", "	")
 		if err != nil {
 			logger.Error("Failed to marshal all metrics", zap.Error(err))
-			continue
+			return
 		}
 
 		if err := file.Truncate(0); err != nil {
 			logger.Error("Failed to truncate file", zap.Error(err))
-			continue
+			return
 		}
 		
 		if _, err := file.Seek(0, 0); err != nil {
 			logger.Error("Failed to seek to beginning of file", zap.Error(err))
-			continue
+			return
 		}
 
 		if _, err := file.Write(data); err != nil {
 			logger.Error("Failed to write metrics to file", zap.Error(err))
-			continue
+			return
 		}
 
 		logger.Info("metrics successfully added to the local storage located in ./data/save.json")
-	}
 }
