@@ -28,14 +28,12 @@ func main() {
 	service := service.NewService(storage)
 	handler := handler.NewHandler(service)
 
-	file, error := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_RDWR, 0666)
-	if error != nil {
-		logger.Fatal("Couldn't create or open the local storage file")
-	}
-
-	defer file.Close()
-
 	if cfg.Restore {
+		file, error := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_RDWR, 0666)
+		if error != nil {
+			logger.Fatal("Couldn't create or open the local storage file")
+		}
+		defer file.Close()
 		data, err := file.Stat()
 		if err != nil {
 			logger.Info("Couldn't read the file")
@@ -96,14 +94,19 @@ func main() {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			saveMetrcisToFile(file, service, logger)
+			saveMetrcisToFile(service, logger)
 		}
 	}
 
 }
 
 
-func saveMetrcisToFile(file *os.File, service service.MetricsService, logger *zap.Logger) {
+func saveMetrcisToFile(service service.MetricsService, logger *zap.Logger) {
+	file, error := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_RDWR, 0666)
+	if error != nil {
+		logger.Fatal("Couldn't create or open the local storage file")
+	}
+	
 	allMetrics := struct {
 			Counters map[string]int64    `json:"counters"`
 			Gauges   map[string]float64  `json:"gauges"`
