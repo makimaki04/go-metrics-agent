@@ -30,7 +30,7 @@ func main() {
 
 	file, error := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_RDWR, 0666)
 	if error != nil {
-		logger.Error("Couldn't create or open the local storage file")
+		logger.Fatal("Couldn't create or open the local storage file")
 	}
 
 	defer file.Close()
@@ -80,13 +80,8 @@ func main() {
 			})
 		})
 		
-	})
+	})	
 
-	err := http.ListenAndServe(cfg.Address, r)
-	if err != nil {
-		panic(err)
-	}
-	
 	if cfg.StoreInt == 0 {
 		saveMetrcisToFile(file, service, logger)
 	} else {
@@ -96,6 +91,11 @@ func main() {
 		for range ticker.C {
 			saveMetrcisToFile(file, service, logger)
 		}
+	}
+
+	err := http.ListenAndServe(cfg.Address, r)
+	if err != nil {
+		panic(err)
 	}
 }
 
