@@ -1,13 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
@@ -17,7 +20,7 @@ import (
 
 func main() {
 	setConfig()
-	
+
 	logger := zap.Must(zap.NewDevelopment())
 
 	defer logger.Sync()
@@ -25,13 +28,20 @@ func main() {
 	handlersLogger := logger.With(
 		zap.String("handler", "Handle Request"),
 	)
+
+	db, err := sql.Open("pgx", cfg.Database)
+	if err != nil {
+		panic("Database connection error:" + err.Error())
+	}
+	defer db.Close()
+
 	storage := repository.NewStorage()
 	service := service.NewService(storage)
-	handler := handler.NewHandler(service)
+	handler := handler.NewHandler(service, db)
 
 	dir := filepath.Dir(cfg.FilePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		 logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
+		logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
 	}
 
 	if cfg.Restore {
@@ -42,24 +52,27 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.GetAllMetrics), handlersLogger))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
 			r.Route("/{MType}/{ID}", func(r chi.Router) {
-				r.Get("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.HandleReq), handlersLogger))
+				r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.HandleReq), handlersLogger))
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetric), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetric), handlersLogger))
 			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
-				r.Post("/",  middleware.WithLogging(handler.HandleReq, handlersLogger))
+				r.Post("/", middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
 		})
-		
-	})	
+		r.Route("/ping", func (r chi.Router)  {
+			r.Get("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
+		})
+
+	})
 
 	go func() {
 		err := http.ListenAndServe(cfg.Address, r)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
 	}()
 
@@ -87,11 +100,11 @@ func loadMetricsFromFile(path string, service service.MetricsService, logger *za
 	if err != nil {
 		logger.Info("Couldn't read the file")
 	}
-	
+
 	if data.Size() > 0 {
-		var  metrics struct {
-			Counters map[string]int64    `json:"counters"`
-			Gauges   map[string]float64  `json:"gauges"`
+		var metrics struct {
+			Counters map[string]int64   `json:"counters"`
+			Gauges   map[string]float64 `json:"gauges"`
 		}
 		decoder := json.NewDecoder(file)
 		if err := decoder.Decode(&metrics); err != nil {
@@ -120,23 +133,23 @@ func saveMetrcisToFile(path string, service service.MetricsService, logger *zap.
 	defer file.Close()
 
 	allMetrics := struct {
-			Counters map[string]int64    `json:"counters"`
-			Gauges   map[string]float64  `json:"gauges"`
-		}{
-			Counters: service.GetAllCounters(),
-			Gauges:   service.GetAllGauges(),
-		}
+		Counters map[string]int64   `json:"counters"`
+		Gauges   map[string]float64 `json:"gauges"`
+	}{
+		Counters: service.GetAllCounters(),
+		Gauges:   service.GetAllGauges(),
+	}
 
-		data, err := json.MarshalIndent(allMetrics, "", "	")
-		if err != nil {
-			logger.Error("Failed to marshal all metrics", zap.Error(err))
-			return
-		}
+	data, err := json.MarshalIndent(allMetrics, "", "	")
+	if err != nil {
+		logger.Error("Failed to marshal all metrics", zap.Error(err))
+		return
+	}
 
-		if _, err := file.Write(data); err != nil {
-			logger.Error("Failed to write metrics to file", zap.Error(err))
-			return
-		}
+	if _, err := file.Write(data); err != nil {
+		logger.Error("Failed to write metrics to file", zap.Error(err))
+		return
+	}
 
-		logger.Info("metrics successfully added to the local storage located in ./data/save.json")
+	logger.Info("metrics successfully added to the local storage located in ./data/save.json")
 }

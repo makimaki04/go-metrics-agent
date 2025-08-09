@@ -2,11 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -15,10 +18,14 @@ import (
 
 type Handler struct {
 	service service.MetricsService
+	db *sql.DB
 }
 
-func NewHandler(service service.MetricsService) *Handler {
-	return &Handler{service: service}
+func NewHandler(service service.MetricsService, database *sql.DB) *Handler {
+	return &Handler{
+		service: service, 
+		db: database,
+	}
 }
 
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
@@ -243,6 +250,19 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
+}
+
+func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := h.db.PingContext(ctx)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, `{"error}": "failed database connection"`)
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
