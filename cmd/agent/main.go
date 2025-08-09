@@ -1,36 +1,28 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/makimaki04/go-metrics-agent.git/internal/agent"
 )
 
-type agentConfig struct {
-	port string
-	reportInterval int
-	pollInterval int
-}
-
 func main() {
-	var agentConfig agentConfig
-	flag.StringVar(&agentConfig.port, "a", "localhost:8080", "Server port")
-	flag.IntVar(&agentConfig.reportInterval, "r", 10, "Report interval in seconds")
-	flag.IntVar(&agentConfig.pollInterval, "p", 2, "Poll interval in seconds")
-	flag.Parse()
-
-	url := fmt.Sprintf(`http://%s`, agentConfig.port)
+	setConfig()
+	if strings.HasPrefix(cfg.Address, ":") {
+		cfg.Address = "localhost" + cfg.Address
+	}
+	url := fmt.Sprintf(`http://%s`, cfg.Address)
 	storage := agent.NewLocalStorage()
 	collector := agent.NewCollector(storage)
 	client := resty.New()
 	sender := agent.NewSender(client, url, storage)
 
-	collectTicker := time.NewTicker(time.Duration(agentConfig.pollInterval) * time.Second)
-	sendTicker := time.NewTicker(time.Duration(agentConfig.reportInterval) * time.Second)
+	collectTicker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
+	sendTicker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 
 	defer func() {
 		collectTicker.Stop()
