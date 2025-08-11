@@ -29,7 +29,8 @@ func main() {
 		zap.String("handler", "Handle Request"),
 	)
 
-	service := service.NewService()
+	storage := repository.NewStorage()
+	service := service.NewService(storage)
 	handler := handler.NewHandler(service)
 
 	switch {
@@ -53,21 +54,19 @@ func main() {
 		}
 
 		if cfg.StoreInt == 0 {
-		saveMetrcisToFile(cfg.FilePath, service, logger)
+		saveMetriсsToFile(cfg.FilePath, service, logger)
 		} else {
 			go func() {
 				ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
 				defer ticker.Stop()
 
 				for range ticker.C {
-					saveMetrcisToFile(cfg.FilePath, service, logger)
+					saveMetriсsToFile(cfg.FilePath, service, logger)
 				}
 			}()
 		}
 		logger.Info("Local storage initialized")
 	default:
-		storage := repository.NewStorage()
-		service.SetLocalStorage(storage)
 		logger.Info("In-memory storage initialized")
 	}
 
@@ -134,7 +133,7 @@ func loadMetricsFromFile(path string, service service.MetricsService, logger *za
 	}
 }
 
-func saveMetrcisToFile(path string, service service.MetricsService, logger *zap.Logger) {
+func saveMetriсsToFile(path string, service service.MetricsService, logger *zap.Logger) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		logger.Error("Failed to open metrics file for writing", zap.Error(err))

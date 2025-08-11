@@ -78,8 +78,7 @@ func TestHandler_PostMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService()
-			service.SetLocalStorage(storage)
+			service := service.NewService(storage)
 			handler := NewHandler(service)
 
 			r := chi.NewRouter()
@@ -124,8 +123,7 @@ func TestHandler_GetAllMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService()
-			service.SetLocalStorage(storage)
+			service := service.NewService(storage)
 			handler := NewHandler(service)
 
 			service.UpdateCounter("PollCount", 1)
@@ -179,8 +177,7 @@ func TestHandler_GetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService()
-			service.SetLocalStorage(storage)
+			service := service.NewService(storage)
 			handler := NewHandler(service)
 			
 			service.UpdateCounter("PollCount", 1)

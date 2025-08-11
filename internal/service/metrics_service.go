@@ -27,8 +27,10 @@ type Service struct {
 	db *sql.DB
 }
 
-func NewService() MetricsService {
-	return &Service{}
+func NewService(storage repository.Repository) MetricsService {
+	return &Service{
+		storage: storage,
+	}
 }
 
 func (s *Service) UpdateMetric(metric models.Metrics) {

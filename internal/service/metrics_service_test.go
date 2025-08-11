@@ -51,8 +51,7 @@ func TestService_UpdateCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService()
-			service.SetLocalStorage(storage)
+			service := NewService(storage)
 
 			var counterName string
 			for _, c := range tt.input {
@@ -133,8 +132,7 @@ func TestService_GetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService()
-			service.SetLocalStorage(storage)
+			service := NewService(storage)
 			service.UpdateGauge(tt.input.name, tt.input.value)
 
 			value, ok := service.GetGauge(tt.key)
@@ -175,8 +173,7 @@ func TestService_GetCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService()
-			service.SetLocalStorage(storage)
+			service := NewService(storage)
 			service.UpdateCounter(tt.input.name, tt.input.value)
 
 			value, ok := service.GetCounter(tt.key)
@@ -210,8 +207,7 @@ func TestService_GetAllCounters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService()
-			service.SetLocalStorage(storage)
+			service := NewService(storage)
 			service.UpdateCounter(tt.mock.name, tt.mock.value)
 			gauges := service.GetAllCounters()
 			assert.Equal(t, tt.want, gauges)
@@ -243,8 +239,7 @@ func TestService_GetAllGauges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService()
-			service.SetLocalStorage(storage)
+			service := NewService(storage)
 			service.UpdateGauge(tt.mock.name, tt.mock.value)
 			gauges := service.GetAllGauges()
 			assert.Equal(t, tt.want, gauges)

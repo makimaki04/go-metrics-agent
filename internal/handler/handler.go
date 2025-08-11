@@ -250,6 +250,7 @@ func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
 	err := h.service.PingDB()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, `{"error}": "failed database connection"`)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
