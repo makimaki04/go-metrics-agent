@@ -2,15 +2,11 @@ package handler
 
 import (
 	"bytes"
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
-	"time"
-
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
@@ -18,13 +14,11 @@ import (
 
 type Handler struct {
 	service service.MetricsService
-	db *sql.DB
 }
 
-func NewHandler(service service.MetricsService, database *sql.DB) *Handler {
+func NewHandler(service service.MetricsService) *Handler {
 	return &Handler{
-		service: service, 
-		db: database,
+		service: service,
 	}
 }
 
@@ -253,10 +247,7 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := h.db.PingContext(ctx)
+	err := h.service.PingDB()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, `{"error}": "failed database connection"`)
 	}

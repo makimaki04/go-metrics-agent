@@ -29,23 +29,46 @@ func main() {
 		zap.String("handler", "Handle Request"),
 	)
 
-	db, err := sql.Open("pgx", cfg.Database)
-	if err != nil {
-		panic("Database connection error:" + err.Error())
-	}
-	defer db.Close()
+	service := service.NewService()
+	handler := handler.NewHandler(service)
 
-	storage := repository.NewStorage()
-	service := service.NewService(storage)
-	handler := handler.NewHandler(service, db)
+	switch {
+	case cfg.Database != "":
+		db, err := sql.Open("pgx", cfg.Database)
+		if err != nil {
+			logger.Fatal("Database connection error:" + err.Error())
+		}
+		defer db.Close()
 
-	dir := filepath.Dir(cfg.FilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
-	}
+		service.SetDB(db)
+		logger.Info("Database storage initialized")
+	case cfg.FilePath != "":
+		dir := filepath.Dir(cfg.FilePath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
+		}
 
-	if cfg.Restore {
-		loadMetricsFromFile(cfg.FilePath, service, logger)
+		if cfg.Restore {
+			loadMetricsFromFile(cfg.FilePath, service, logger)
+		}
+
+		if cfg.StoreInt == 0 {
+		saveMetrcisToFile(cfg.FilePath, service, logger)
+		} else {
+			go func() {
+				ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
+				defer ticker.Stop()
+
+				for range ticker.C {
+					saveMetrcisToFile(cfg.FilePath, service, logger)
+				}
+			}()
+		}
+		logger.Info("Local storage initialized")
+	default:
+		storage := repository.NewStorage()
+		service.SetLocalStorage(storage)
+		logger.Info("In-memory storage initialized")
 	}
 
 	r := chi.NewRouter()
@@ -69,22 +92,9 @@ func main() {
 
 	})
 
-	go func() {
-		err := http.ListenAndServe(cfg.Address, r)
-		if err != nil {
-			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
-		}
-	}()
-
-	if cfg.StoreInt == 0 {
-		saveMetrcisToFile(cfg.FilePath, service, logger)
-	} else {
-		ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			saveMetrcisToFile(cfg.FilePath, service, logger)
-		}
+	err := http.ListenAndServe(cfg.Address, r)
+	if err != nil {
+		panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 	}
 }
 

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -79,9 +78,9 @@ func TestHandler_PostMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
-			db, _ := sql.Open("pgx", "host=localhost port=5432 user=username password=password dbname=dbname sslmode=disable")
-			handler := NewHandler(service, db)
+			service := service.NewService()
+			service.SetLocalStorage(storage)
+			handler := NewHandler(service)
 
 			r := chi.NewRouter()
 			r.Post("/update/{MType}/{ID}/{value}", handler.HandleReq)
@@ -125,9 +124,9 @@ func TestHandler_GetAllMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
-			db, _ := sql.Open("pgx", "host=localhost port=5432 user=username password=password dbname=dbname sslmode=disable")
-			handler := NewHandler(service, db)
+			service := service.NewService()
+			service.SetLocalStorage(storage)
+			handler := NewHandler(service)
 
 			service.UpdateCounter("PollCount", 1)
 
@@ -180,9 +179,9 @@ func TestHandler_GetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
-			db, _ := sql.Open("pgx", "host=localhost port=5432 user=username password=password dbname=dbname sslmode=disable")
-			handler := NewHandler(service, db)
+			service := service.NewService()
+			service.SetLocalStorage(storage)
+			handler := NewHandler(service)
 			
 			service.UpdateCounter("PollCount", 1)
 
