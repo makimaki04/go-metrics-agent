@@ -8,7 +8,7 @@ CREATE TABLE metrics (
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT value_check CHECK (
         (metric_type = 'gauge' AND gauge_value IS NOT NULL AND counter_value IS NULL) OR
-        (metric_type = 'counter' AND xcounter_value IS NOT NULL AND gauge_value IS NULL)
+        (metric_type = 'counter' AND counter_value IS NOT NULL AND gauge_value IS NULL)
     )
 );
 

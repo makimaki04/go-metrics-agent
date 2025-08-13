@@ -12,7 +12,7 @@ type config struct {
 	StoreInt int    `env:"STORE_INTERVAL"`
 	FilePath string `env:"FILE_STORAGE_PATH"`
 	Restore  bool   `env:"RESTORE"`
-	Database string `env:"DATABASE_DSN"`
+	DSN      string `env:"DATABASE_DSN"`
 }
 
 var cfg config
@@ -22,7 +22,7 @@ func setConfig() {
 	flag.IntVar(&cfg.StoreInt, "i", 300, "collect data to store interval in secodns")
 	flag.StringVar(&cfg.FilePath, "f", "", "storage file path")
 	flag.BoolVar(&cfg.Restore, "r", false, "should load data from local file when starting the server")
-	flag.StringVar(&cfg.Database, "d", "", "databse connection string")
+	flag.StringVar(&cfg.DSN, "d", "", "databse connection string")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -30,7 +30,9 @@ func setConfig() {
 	}
 }
 
-
 // host=localhost port=5432 user=metrics_user password=password dbname=metrics_db sslmode=disable
 
 //../../data/save.json
+
+
+//"postgres://metrics_user:password@localhost:5432/metrics_db?sslmode=disable"

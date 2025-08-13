@@ -13,6 +13,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
+	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
@@ -34,8 +35,13 @@ func main() {
 	handler := handler.NewHandler(service)
 
 	switch {
-	case cfg.Database != "":
-		db, err := sql.Open("pgx", cfg.Database)
+	case cfg.DSN != "":
+		if err := migrations.RunMigration(cfg.DSN); err != nil {
+			logger.Fatal("Error when starting migrations: %v", zap.Error(err))
+		}
+		logger.Info("Migration successfully started")
+
+		db, err := sql.Open("pgx", cfg.DSN)
 		if err != nil {
 			logger.Fatal("Database connection error:" + err.Error())
 		}
@@ -54,7 +60,7 @@ func main() {
 		}
 
 		if cfg.StoreInt == 0 {
-		saveMetriсsToFile(cfg.FilePath, service, logger)
+			saveMetriсsToFile(cfg.FilePath, service, logger)
 		} else {
 			go func() {
 				ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
@@ -85,8 +91,8 @@ func main() {
 				r.Post("/", middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
 		})
-		r.Route("/ping", func (r chi.Router)  {
-			r.Get("/",  middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
+		r.Route("/ping", func(r chi.Router) {
+			r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
 		})
 
 	})
