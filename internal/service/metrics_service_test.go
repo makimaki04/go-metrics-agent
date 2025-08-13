@@ -59,8 +59,8 @@ func TestService_UpdateCounter(t *testing.T) {
 				counterName = c.name
 			}
 
-			value, exist := storage.GetCounter(counterName)
-			assert.True(t, exist, "counter should exist")
+			value, err := storage.GetCounter(counterName)
+			assert.NoError(t, err, "counter should exist")
 			assert.Equal(t, tt.want, value)
 		})
 	}
@@ -94,8 +94,8 @@ func TestService_UpdateGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetGauge(tt.input.name, tt.input.value)
-			value, exist := storage.GetGauge(tt.input.name)
-			assert.True(t, exist, "gauge should exist")
+			value, err := storage.GetGauge(tt.input.name)
+			assert.NoError(t, err, "gauge should exist")
 			assert.Equal(t, tt.input.value, value)
 		})
 	}
@@ -209,7 +209,8 @@ func TestService_GetAllCounters(t *testing.T) {
 			storage := repository.NewStorage()
 			service := NewService(storage)
 			service.UpdateCounter(tt.mock.name, tt.mock.value)
-			gauges := service.GetAllCounters()
+			gauges, err := service.GetAllCounters()
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, gauges)
 		})
 	}
@@ -241,7 +242,8 @@ func TestService_GetAllGauges(t *testing.T) {
 			storage := repository.NewStorage()
 			service := NewService(storage)
 			service.UpdateGauge(tt.mock.name, tt.mock.value)
-			gauges := service.GetAllGauges()
+			gauges, err := service.GetAllGauges()
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, gauges)
 		})
 	}

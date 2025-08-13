@@ -1,6 +1,9 @@
 package repository
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type MemStorage struct {
 	gauges   map[string]float64
@@ -8,38 +11,26 @@ type MemStorage struct {
 	mu sync.RWMutex
 }
 
-type Repository interface {
-	SetGauge(name string, value float64)
-	SetCounter(name string, value int64)
-	GetGauge(name string) (float64, bool)
-	GetCounter(name string) (int64, bool)
-	GetAllGauges() map[string]float64
-	GetAllCounters() map[string]int64
-}
-
-func NewStorage() Repository {
-	return &MemStorage{
-		gauges:   make(map[string]float64),
-		counters: make(map[string]int64),
-	}
-}
-
-func (m *MemStorage) SetGauge(name string, value float64) {
+func (m *MemStorage) SetGauge(name string, value float64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.gauges[name] = value
+	return nil
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, bool) {
+func (m *MemStorage) GetGauge(name string) (float64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	value, ok := m.gauges[name]
-	return value, ok
+	if !ok {
+		return 0, fmt.Errorf("gauge %q not found", name)
+	}
+	return value, nil
 }
 
-func (m *MemStorage) GetAllGauges() map[string]float64 {
+func (m *MemStorage) GetAllGauges() (map[string]float64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -47,25 +38,29 @@ func (m *MemStorage) GetAllGauges() map[string]float64 {
 	for k, v := range m.gauges {
 		copy[k] = v
 	}
-	return copy
+	return copy, nil
 }
 
-func (m *MemStorage) SetCounter(name string, value int64) {
+func (m *MemStorage) SetCounter(name string, value int64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.counters[name] += value
+	return nil
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, bool) {
+func (m *MemStorage) GetCounter(name string) (int64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	value, ok := m.counters[name]
-	return value, ok
+	if !ok {
+		return 0, fmt.Errorf("counter %q not found", name)
+	}
+	return value, nil
 }
 
-func (m *MemStorage) GetAllCounters() map[string]int64 {
+func (m *MemStorage) GetAllCounters() (map[string]int64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -73,5 +68,9 @@ func (m *MemStorage) GetAllCounters() map[string]int64 {
 	for k, v := range m.counters {
 		copy[k] = v
 	}
-	return copy
+	return copy, nil
+}
+
+func (m *MemStorage) Ping() error {
+	return nil
 }

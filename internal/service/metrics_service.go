@@ -1,30 +1,26 @@
 package service
 
 import (
-	"context"
-	"database/sql"
-	"time"
+	"fmt"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 )
 
 type MetricsService interface {
-	UpdateMetric(metric models.Metrics)
-	UpdateGauge(name string, value float64)
-	GetGauge(name string) (float64, bool)
-	GetAllGauges() map[string]float64
-	UpdateCounter(name string, value int64)
-	GetCounter(name string) (int64, bool)
-	GetAllCounters() map[string]int64
+	UpdateMetric(metric models.Metrics) error
+	UpdateGauge(name string, value float64) error
+	GetGauge(name string) (float64, error)
+	GetAllGauges() (map[string]float64, error)
+	UpdateCounter(name string, value int64) error
+	GetCounter(name string) (int64, error)
+	GetAllCounters() (map[string]int64, error)
 	SetLocalStorage(storage repository.Repository)
-	SetDB(db *sql.DB)
 	PingDB() error
 }
 
 type Service struct {
 	storage repository.Repository
-	db *sql.DB
 }
 
 func NewService(storage repository.Repository) MetricsService {
@@ -33,36 +29,44 @@ func NewService(storage repository.Repository) MetricsService {
 	}
 }
 
-func (s *Service) UpdateMetric(metric models.Metrics) {
+func (s *Service) UpdateMetric(metric models.Metrics) error {
 	switch metric.MType {
 	case models.Counter:
-		s.UpdateCounter(metric.ID, *metric.Delta)
+		if metric.Delta == nil {
+			return fmt.Errorf("metric %q: Delta is nil", metric.ID)
+		}
+		return s.UpdateCounter(metric.ID, *metric.Delta)
 	case models.Gauge:
-		s.UpdateGauge(metric.ID, *metric.Value)
+		if metric.Value == nil {
+			return fmt.Errorf("metric %q: Value is nil", metric.ID)
+		}
+		return s.UpdateGauge(metric.ID, *metric.Value)
 	}
+
+	return nil
 }
 
-func (s *Service) UpdateGauge(name string, value float64) {
-	s.storage.SetGauge(name, value)
+func (s *Service) UpdateGauge(name string, value float64) error {
+	return s.storage.SetGauge(name, value)
 }
 
-func (s *Service) GetGauge(name string) (float64, bool) {
+func (s *Service) GetGauge(name string) (float64, error) {
 	return s.storage.GetGauge(name)
 }
 
-func (s *Service) GetAllGauges() map[string]float64 {
+func (s *Service) GetAllGauges() (map[string]float64, error) {
 	return s.storage.GetAllGauges()
 }
 
-func (s *Service) UpdateCounter(name string, value int64) {
-	s.storage.SetCounter(name, value)
+func (s *Service) UpdateCounter(name string, value int64) error {
+	return s.storage.SetCounter(name, value)
 }
 
-func (s *Service) GetCounter(name string) (int64, bool) {
+func (s *Service) GetCounter(name string) (int64, error) {
 	return s.storage.GetCounter(name)
 }
 
-func (s *Service) GetAllCounters() map[string]int64 {
+func (s *Service) GetAllCounters() (map[string]int64, error) {
 	return s.storage.GetAllCounters()
 }
 
@@ -71,17 +75,5 @@ func (s *Service) SetLocalStorage(storage repository.Repository) {
 }
 
 func (s *Service) PingDB() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := s.db.PingContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil 
-}
-
-func (s *Service) SetDB(db *sql.DB) {
-	s.db = db
+	return s.storage.Ping()
 }

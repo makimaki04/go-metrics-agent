@@ -29,10 +29,9 @@ func main() {
 	handlersLogger := logger.With(
 		zap.String("handler", "Handle Request"),
 	)
-
+	
 	storage := repository.NewStorage()
-	service := service.NewService(storage)
-	handler := handler.NewHandler(service)
+	var mService service.MetricsService
 
 	switch {
 	case cfg.DSN != "":
@@ -47,34 +46,42 @@ func main() {
 		}
 		defer db.Close()
 
-		service.SetDB(db)
+		storage = repository.NewStorage()
+		mService = service.NewService(storage)
+		mService.SetDB(db)
+
 		logger.Info("Database storage initialized")
 	case cfg.FilePath != "":
+		mService = service.NewService(storage)
+
 		dir := filepath.Dir(cfg.FilePath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
 		}
 
 		if cfg.Restore {
-			loadMetricsFromFile(cfg.FilePath, service, logger)
+			loadMetricsFromFile(cfg.FilePath, mService, logger)
 		}
 
 		if cfg.StoreInt == 0 {
-			saveMetriсsToFile(cfg.FilePath, service, logger)
+			saveMetriсsToFile(cfg.FilePath, mService, logger)
 		} else {
 			go func() {
 				ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
 				defer ticker.Stop()
 
 				for range ticker.C {
-					saveMetriсsToFile(cfg.FilePath, service, logger)
+					saveMetriсsToFile(cfg.FilePath, mService, logger)
 				}
 			}()
 		}
 		logger.Info("Local storage initialized")
 	default:
+		mService = service.NewService(storage)
 		logger.Info("In-memory storage initialized")
 	}
+
+	handler := handler.NewHandler(mService)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {

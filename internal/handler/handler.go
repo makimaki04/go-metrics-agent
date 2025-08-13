@@ -23,8 +23,8 @@ func NewHandler(service service.MetricsService) *Handler {
 }
 
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
-	gauges := h.service.GetAllGauges()
-	counters := h.service.GetAllCounters()
+	gauges, err := h.service.GetAllGauges()
+	counters, err := h.service.GetAllCounters()
 	const marking = `
 					<!DOCTYPE html>
 					<html>
@@ -123,15 +123,15 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var value string
 	switch metric.MType {
 	case models.Counter:
-		m, ok := h.service.GetCounter(metric.ID)
-		if !ok {
+		m, err := h.service.GetCounter(metric.ID)
+		if err != nil {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
 		value = fmt.Sprintf(`%v`, m)
 	case models.Gauge:
-		m, ok := h.service.GetGauge(metric.ID)
-		if !ok {
+		m, err := h.service.GetGauge(metric.ID)
+		if err != nil {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
@@ -219,15 +219,15 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 
 	switch metric.MType {
 	case models.Counter:
-		d, ok := h.service.GetCounter(metric.ID)
-		if !ok {
+		d, err := h.service.GetCounter(metric.ID)
+		if err != nil {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
 		metric.Delta = &d
 	case models.Gauge:
-		v, ok := h.service.GetGauge(metric.ID)
-		if !ok {
+		v, err := h.service.GetGauge(metric.ID)
+		if err != nil {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
