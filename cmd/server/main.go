@@ -48,7 +48,6 @@ func main() {
 
 		storage = repository.NewStorage()
 		mService = service.NewService(storage)
-		mService.SetDB(db)
 
 		logger.Info("Database storage initialized")
 	case cfg.FilePath != "":
@@ -154,12 +153,24 @@ func saveMetriсsToFile(path string, service service.MetricsService, logger *zap
 	}
 	defer file.Close()
 
+	gauges, err := service.GetAllGauges()
+	if err != nil {
+		logger.Error("Failed to get gauges", zap.Error(err))
+		gauges = make(map[string]float64)
+	}
+
+	counters, err := service.GetAllCounters()
+	if err != nil {
+		logger.Error("Failed to get counters", zap.Error(err))
+		counters = make(map[string]int64)
+	}
+
 	allMetrics := struct {
 		Counters map[string]int64   `json:"counters"`
 		Gauges   map[string]float64 `json:"gauges"`
 	}{
-		Counters: service.GetAllCounters(),
-		Gauges:   service.GetAllGauges(),
+		Counters: counters,
+		Gauges:   gauges,
 	}
 
 	data, err := json.MarshalIndent(allMetrics, "", "	")
