@@ -18,10 +18,10 @@ func (d *DBStorage) SetGauge(name string, value float64) error {
 	_, err := d.db.ExecContext(ctx, `
 		INSERT INTO metrics (name, metric_type, gauge_value)
 		VALUES ($1, 'gauge', $2)
-		ON CONFLICT (name) DO UPDATE
-		SET gauge_value = EXCLUDED.gauge_value,
-			counter_value = NULL
-		`, name, value)
+		ON CONFLICT (name, metric_type) 
+		DO UPDATE 
+		SET gauge_value = EXCLUDED.gauge_value, counter_value = NULL`, 
+		name, value)
 	if err != nil {
 		return fmt.Errorf("failed to set gauge %q: %w", name, err)
 	}
@@ -91,7 +91,8 @@ func (d *DBStorage) SetCounter(name string, value int64) error {
 	_, err := d.db.ExecContext(ctx, `
 		INSERT INTO metrics (name, metric_type, counter_value)
 		VALUES ($1, 'counter', $2)
-		ON CONFLICT (name) DO UPDATE
+		ON CONFLICT (name, metric_type) 
+		DO UPDATE 
 		SET counter_value = metrics.counter_value + EXCLUDED.counter_value,
 		gauge_value = NULL
 	`, name, value)

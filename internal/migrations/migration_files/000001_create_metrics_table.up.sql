@@ -13,3 +13,5 @@ CREATE TABLE metrics (
 );
 
 CREATE INDEX idx_metrics_name ON metrics(name);
+
+CREATE UNIQUE INDEX idx_metrics_name_type ON metrics(name, metric_type);
