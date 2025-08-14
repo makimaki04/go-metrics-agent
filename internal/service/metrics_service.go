@@ -16,6 +16,7 @@ type MetricsService interface {
 	GetCounter(name string) (int64, bool)
 	GetAllCounters() (map[string]int64, error)
 	SetLocalStorage(storage repository.Repository)
+	UpdateMetricBatch(metrics []models.Metrics) error
 	PingDB() error
 }
 
@@ -72,6 +73,10 @@ func (s *Service) GetAllCounters() (map[string]int64, error) {
 
 func (s *Service) SetLocalStorage(storage repository.Repository) {
 	s.storage = storage
+}
+
+func (s *Service) UpdateMetricBatch(metrics []models.Metrics) error {
+	return s.storage.SetMetricBatch(metrics)
 }
 
 func (s *Service) PingDB() error {

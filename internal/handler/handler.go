@@ -194,7 +194,7 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, `{"error": "empty request body"}`)
+		respondWithError(w, http.StatusBadRequest, `{"error": "failed to read request body"}`)
 		return
 	}
 
@@ -210,7 +210,30 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	fmt.Println(metric)
+}
+
+func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, `{"error": "failed to read request body"}`)
+		return
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), &metrics); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "wrong body structure"}`)
+		return
+	}
+
+	if err := h.service.UpdateMetricBatch(metrics); err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
