@@ -141,11 +141,11 @@ func (d *DBStorage) GetCounter(name string) (int64, bool) {
 	err := counter.Scan(&value)
 
 	if err == sql.ErrNoRows {
-		d.logger.Sugar().Fatalf("metric %q not found", name)
+		d.logger.Sugar().Infof("metric %q not found", name)
 		return 0, false
 	}
 	if err != nil {
-		d.logger.Sugar().Fatalf("failed to get metric %q: %w", name, err)
+		d.logger.Sugar().Infof("failed to get metric %q: %w", name, err)
 		return 0, false
 	}
 
