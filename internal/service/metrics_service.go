@@ -1,10 +1,14 @@
 package service
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type MetricsService interface {
@@ -48,27 +52,49 @@ func (s *Service) UpdateMetric(metric models.Metrics) error {
 }
 
 func (s *Service) UpdateGauge(name string, value float64) error {
-	return s.storage.SetGauge(name, value)
+	return withRetry(func() error {
+		return s.storage.SetGauge(name, value)
+	})
 }
 
 func (s *Service) GetGauge(name string) (float64, bool) {
-	return s.storage.GetGauge(name)
+	value, err := retryValue(func() (float64, error) {
+		v, ok := s.storage.GetGauge(name)
+		if !ok {
+			return 0, fmt.Errorf("metric %q not found", name)
+		}
+		return v, nil
+	})
+	return value, err == nil
 }
 
 func (s *Service) GetAllGauges() (map[string]float64, error) {
-	return s.storage.GetAllGauges()
+	return retryValue(func() (map[string]float64, error) {
+		return s.storage.GetAllGauges()
+	})
 }
 
 func (s *Service) UpdateCounter(name string, value int64) error {
-	return s.storage.SetCounter(name, value)
+	return withRetry(func() error {
+		return s.storage.SetCounter(name, value)
+	})
 }
 
 func (s *Service) GetCounter(name string) (int64, bool) {
-	return s.storage.GetCounter(name)
+	value, err := retryValue(func() (int64, error) {
+		v, ok := s.storage.GetCounter(name)
+		if !ok {
+			return 0, fmt.Errorf("counter %q not found", name)
+		}
+		return v, nil
+	})
+	return value, err == nil
 }
 
 func (s *Service) GetAllCounters() (map[string]int64, error) {
-	return s.storage.GetAllCounters()
+	return retryValue(func() (map[string]int64, error) {
+		return s.storage.GetAllCounters()
+	})
 }
 
 func (s *Service) SetLocalStorage(storage repository.Repository) {
@@ -76,9 +102,53 @@ func (s *Service) SetLocalStorage(storage repository.Repository) {
 }
 
 func (s *Service) UpdateMetricBatch(metrics []models.Metrics) error {
-	return s.storage.SetMetricBatch(metrics)
+	return withRetry(func() error {
+		return s.storage.SetMetricBatch(metrics)
+	})
 }
 
 func (s *Service) PingDB() error {
 	return s.storage.Ping()
+}
+
+var retryIntervals = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
+
+func withRetry(fn func() error) error {
+	var lastErr error
+
+	for i, interval := range retryIntervals {
+		err := fn()
+		if err == nil {
+			return nil
+		}
+
+		lastErr = err
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgerrcode.IsConnectionException(pgErr.Code) {
+				fmt.Printf("Connection exception, retrying in %s: %v\n", interval, err)
+			} else {
+				return err
+			}
+		}
+
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
+	}
+
+	return fmt.Errorf("operation failed after retries: %w", lastErr)
+}
+
+func retryValue[T any](fn func() (T, error)) (T, error) {
+	var result T
+
+	err := withRetry( func() error {
+		var err error
+		result, err = fn()
+		return err
+	})
+
+	return result, err
 }
