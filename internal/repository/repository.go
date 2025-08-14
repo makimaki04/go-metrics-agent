@@ -1,12 +1,16 @@
 package repository
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"go.uber.org/zap"
+)
 
 type Repository interface {
 	SetGauge(name string, value float64) error
 	SetCounter(name string, value int64) error
-	GetGauge(name string) (float64, error)
-	GetCounter(name string) (int64, error)
+	GetGauge(name string) (float64, bool)
+	GetCounter(name string) (int64, bool)
 	GetAllGauges() (map[string]float64, error) 
 	GetAllCounters() (map[string]int64, error)
 	Ping() error
@@ -19,8 +23,9 @@ func NewStorage() Repository {
 	}
 }
 
-func NewDBStorage(db *sql.DB) Repository {
+func NewDBStorage(db *sql.DB, logger *zap.Logger) Repository {
 	return &DBStorage{
 		db: db,
+		logger: logger,
 	}
 }

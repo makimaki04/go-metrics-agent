@@ -10,10 +10,10 @@ import (
 type MetricsService interface {
 	UpdateMetric(metric models.Metrics) error
 	UpdateGauge(name string, value float64) error
-	GetGauge(name string) (float64, error)
+	GetGauge(name string) (float64, bool)
 	GetAllGauges() (map[string]float64, error)
 	UpdateCounter(name string, value int64) error
-	GetCounter(name string) (int64, error)
+	GetCounter(name string) (int64, bool)
 	GetAllCounters() (map[string]int64, error)
 	SetLocalStorage(storage repository.Repository)
 	PingDB() error
@@ -50,7 +50,7 @@ func (s *Service) UpdateGauge(name string, value float64) error {
 	return s.storage.SetGauge(name, value)
 }
 
-func (s *Service) GetGauge(name string) (float64, error) {
+func (s *Service) GetGauge(name string) (float64, bool) {
 	return s.storage.GetGauge(name)
 }
 
@@ -62,7 +62,7 @@ func (s *Service) UpdateCounter(name string, value int64) error {
 	return s.storage.SetCounter(name, value)
 }
 
-func (s *Service) GetCounter(name string) (int64, error) {
+func (s *Service) GetCounter(name string) (int64, bool) {
 	return s.storage.GetCounter(name)
 }
 

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -19,15 +18,12 @@ func (m *MemStorage) SetGauge(name string, value float64) error {
 	return nil
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, error) {
+func (m *MemStorage) GetGauge(name string) (float64, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	value, ok := m.gauges[name]
-	if !ok {
-		return 0, fmt.Errorf("gauge %q not found", name)
-	}
-	return value, nil
+	return value, ok
 }
 
 func (m *MemStorage) GetAllGauges() (map[string]float64, error) {
@@ -49,15 +45,12 @@ func (m *MemStorage) SetCounter(name string, value int64) error {
 	return nil
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, error) {
+func (m *MemStorage) GetCounter(name string) (int64, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	value, ok := m.counters[name]
-	if !ok {
-		return 0, fmt.Errorf("counter %q not found", name)
-	}
-	return value, nil
+	return value, ok
 }
 
 func (m *MemStorage) GetAllCounters() (map[string]int64, error) {

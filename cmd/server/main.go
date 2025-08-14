@@ -46,7 +46,7 @@ func main() {
 		}
 		defer db.Close()
 
-		storage = repository.NewDBStorage(db)
+		storage = repository.NewDBStorage(db, logger)
 		mService = service.NewService(storage)
 
 		logger.Info("Database storage initialized")

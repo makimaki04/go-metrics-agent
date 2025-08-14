@@ -131,15 +131,15 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var value string
 	switch metric.MType {
 	case models.Counter:
-		m, err := h.service.GetCounter(metric.ID)
-		if err != nil {
+		m, ok := h.service.GetCounter(metric.ID)
+		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
 		value = fmt.Sprintf(`%v`, m)
 	case models.Gauge:
-		m, err := h.service.GetGauge(metric.ID)
-		if err != nil {
+		m, ok := h.service.GetGauge(metric.ID)
+		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
@@ -230,15 +230,15 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 
 	switch metric.MType {
 	case models.Counter:
-		d, err := h.service.GetCounter(metric.ID)
-		if err != nil {
+		d, ok := h.service.GetCounter(metric.ID)
+		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}
 		metric.Delta = &d
 	case models.Gauge:
-		v, err := h.service.GetGauge(metric.ID)
-		if err != nil {
+		v, ok := h.service.GetGauge(metric.ID)
+		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
 		}

@@ -35,8 +35,8 @@ func TestMemStorage_SetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetGauge(tt.input.name, tt.input.value)
-			value, err := storage.GetGauge(tt.input.name)
-			assert.NoError(t, err, "Gauge value should exist")
+			value, ok := storage.GetGauge(tt.input.name)
+			assert.True(t, ok, "Gauge value should exist")
 			assert.Equal(t, tt.input.value, value)
 		})
 	}
@@ -95,8 +95,8 @@ func TestMemStorage_SetCounter(t *testing.T) {
 				counterName = c.name
 			}
 
-			value, err := storage.GetCounter(counterName)
-			assert.NoError(t, err, "counter should exist")
+			value, ok := storage.GetCounter(counterName)
+			assert.True(t, ok, "counter should exist")
 			assert.Equal(t, tt.want, value)
 		})
 	}

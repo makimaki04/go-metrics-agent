@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type DBStorage struct {
 	db *sql.DB
+	logger *zap.Logger
 }
 
 func (d *DBStorage) SetGauge(name string, value float64) error {
@@ -29,7 +32,7 @@ func (d *DBStorage) SetGauge(name string, value float64) error {
 	return nil
 }
 
-func (d *DBStorage) GetGauge(name string) (float64, error) {
+func (d *DBStorage) GetGauge(name string) (float64, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -43,13 +46,15 @@ func (d *DBStorage) GetGauge(name string) (float64, error) {
 	err := gauge.Scan(&value)
 
 	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("metric %q not found", name)
+		d.logger.Sugar().Fatalf("metric %q not found", name)
+		return 0, false
 	}
 	if err != nil {
-		return 0, fmt.Errorf("failed to get metric %q: %w", name, err)
+		d.logger.Sugar().Fatalf("failed to get metric %q: %w", name, err)
+		return 0, false
 	}
 
-	return value, nil
+	return value, true
 }
 
 func (d *DBStorage) GetAllGauges() (map[string]float64, error) {
@@ -103,7 +108,7 @@ func (d *DBStorage) SetCounter(name string, value int64) error {
 	return nil
 }
 
-func (d *DBStorage) GetCounter(name string) (int64, error) {
+func (d *DBStorage) GetCounter(name string) (int64, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -117,13 +122,16 @@ func (d *DBStorage) GetCounter(name string) (int64, error) {
 	err := counter.Scan(&value)
 
 	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("metric %q not found", name)
+		d.logger.Sugar().Fatalf("metric %q not found", name)
+		return 0, false
 	}
 	if err != nil {
-		return 0, fmt.Errorf("failed to get metric %q: %w", name, err)
+		d.logger.Sugar().Fatalf("failed to get metric %q: %w", name, err)
+		return 0, false
 	}
 
-	return value, nil
+
+	return value, true
 }
 
 func (d *DBStorage) GetAllCounters() (map[string]int64, error) {
