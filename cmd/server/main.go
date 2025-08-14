@@ -29,7 +29,7 @@ func main() {
 	handlersLogger := logger.With(
 		zap.String("handler", "Handle Request"),
 	)
-	
+
 	storage := repository.NewStorage()
 	var mService service.MetricsService
 
