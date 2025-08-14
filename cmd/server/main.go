@@ -100,6 +100,9 @@ func main() {
 		r.Route("/ping", func(r chi.Router) {
 			r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
 		})
+		r.Route("/updates", func(r chi.Router) {
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetricBatch), handlersLogger))
+		})
 
 	})
 
