@@ -24,7 +24,15 @@ func NewHandler(service service.MetricsService) *Handler {
 
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	gauges, err := h.service.GetAllGauges()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	counters, err := h.service.GetAllCounters()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	const marking = `
 					<!DOCTYPE html>
 					<html>
