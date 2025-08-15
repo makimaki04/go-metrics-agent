@@ -26,7 +26,7 @@ const (
 
 	getGaugeQuery = `
 		SELECT gauge_value FROM metrics
-		WHERE name = $1
+		WHERE name = $1 AND metric_type = 'gauge'
 	`
 
 	getAllGaugesQuery = `
@@ -45,7 +45,7 @@ const (
 
 	getCounterQuery = `
 		SELECT counter_value FROM metrics
-		WHERE name = $1
+		WHERE name = $1 AND metric_type = 'counter'
 	`
 
 	getAllCountersQuery = `

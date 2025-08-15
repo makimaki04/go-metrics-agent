@@ -53,7 +53,7 @@ func (s *Service) UpdateMetric(metric models.Metrics) error {
 		return s.UpdateGauge(metric.ID, *metric.Value)
 	}
 
-	return nil
+	return fmt.Errorf("unknown metric type: %q", metric.MType)
 }
 
 func (s *Service) UpdateGauge(name string, value float64) error {
