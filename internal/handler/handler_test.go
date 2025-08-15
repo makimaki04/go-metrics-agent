@@ -11,6 +11,7 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestHandler_PostMetric(t *testing.T) {
@@ -78,7 +79,7 @@ func TestHandler_PostMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
+			service := service.NewService(storage, &zap.Logger{})
 			handler := NewHandler(service)
 
 			r := chi.NewRouter()
@@ -123,7 +124,7 @@ func TestHandler_GetAllMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
+			service := service.NewService(storage, &zap.Logger{})
 			handler := NewHandler(service)
 
 			service.UpdateCounter("PollCount", 1)
@@ -177,7 +178,7 @@ func TestHandler_GetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := service.NewService(storage)
+			service := service.NewService(storage, &zap.Logger{})
 			handler := NewHandler(service)
 			
 			service.UpdateCounter("PollCount", 1)

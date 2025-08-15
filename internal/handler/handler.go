@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
-
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
@@ -18,12 +17,22 @@ type Handler struct {
 }
 
 func NewHandler(service service.MetricsService) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service: service,
+	}
 }
 
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
-	gauges := h.service.GetAllGauges()
-	counters := h.service.GetAllCounters()
+	gauges, err := h.service.GetAllGauges()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	counters, err := h.service.GetAllCounters()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	const marking = `
 					<!DOCTYPE html>
 					<html>
@@ -185,7 +194,7 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, `{"error": "empty request body"}`)
+		respondWithError(w, http.StatusBadRequest, `{"error": "failed to read request body"}`)
 		return
 	}
 
@@ -194,11 +203,37 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.UpdateMetric(metric)
+	if err := h.service.UpdateMetric(metric); err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
+    	return
+	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	fmt.Println(metric)
+}
+
+func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, `{"error": "failed to read request body"}`)
+		return
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), &metrics); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "wrong body structure"}`)
+		return
+	}
+
+	if err := h.service.UpdateMetricBatch(metrics); err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
@@ -243,6 +278,17 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
+}
+
+func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
+	err := h.service.PingDB()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, `{"error}": "failed database connection"`)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
