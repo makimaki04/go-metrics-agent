@@ -160,9 +160,9 @@ func saveMetricsToFile(path string, service service.MetricsService, logger *zap.
 	logger.Info("metrics successfully added to the local storage located in ./data/save.json")
 }
 
-func initDBStorage(logger *zap.Logger) (*sql.DB ,repository.Repository) {
+func initDBStorage(logger *zap.Logger) (*sql.DB, repository.Repository) {
 	if err := migrations.RunMigration(cfg.DSN); err != nil {
-	logger.Fatal("Error when starting migrations: %v", zap.Error(err))
+		logger.Fatal("Error when starting migrations: %v", zap.Error(err))
 	}
 	logger.Info("Migration successfully started")
 
@@ -176,24 +176,24 @@ func initDBStorage(logger *zap.Logger) (*sql.DB ,repository.Repository) {
 
 func initFileStorage(service service.MetricsService, logger *zap.Logger) {
 	dir := filepath.Dir(cfg.FilePath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
-		}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
+	}
 
-		if cfg.Restore {
-			loadMetricsFromFile(cfg.FilePath, service, logger)
-		}
+	if cfg.Restore {
+		loadMetricsFromFile(cfg.FilePath, service, logger)
+	}
 
-		if cfg.StoreInt == 0 {
-			saveMetricsToFile(cfg.FilePath, service, logger)
-		} else {
-			go func() {
-				ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
-				defer ticker.Stop()
+	if cfg.StoreInt == 0 {
+		saveMetricsToFile(cfg.FilePath, service, logger)
+	} else {
+		go func() {
+			ticker := time.NewTicker(time.Duration(cfg.StoreInt) * time.Second)
+			defer ticker.Stop()
 
-				for range ticker.C {
-					saveMetricsToFile(cfg.FilePath, service, logger)
-				}
-			}()
-		}
+			for range ticker.C {
+				saveMetricsToFile(cfg.FilePath, service, logger)
+			}
+		}()
+	}
 }

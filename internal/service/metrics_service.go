@@ -29,13 +29,13 @@ type MetricsService interface {
 
 type Service struct {
 	storage repository.Repository
-	logger *zap.Logger
+	logger  *zap.Logger
 }
 
 func NewService(storage repository.Repository, logger *zap.Logger) MetricsService {
 	return &Service{
 		storage: storage,
-		logger: logger,
+		logger:  logger,
 	}
 }
 
@@ -164,7 +164,7 @@ func isTemporary(err error) bool {
 func retryValue[T any](fn func() (T, error), logger *zap.Logger) (T, error) {
 	var result T
 
-	err := withRetry( func() error {
+	err := withRetry(func() error {
 		var err error
 		result, err = fn()
 		return err
