@@ -76,11 +76,6 @@ func (d *DBStorage) GetGauge(name string) (float64, bool) {
 	gauge := d.db.QueryRowContext(ctx, getGaugeQuery, name)
 
 	err := gauge.Scan(&value)
-
-	if err == sql.ErrNoRows {
-		d.logger.Sugar().Infof("metric %q not found", name)
-		return 0, false
-	}
 	if err != nil {
 		d.logger.Sugar().Infof("failed to get metric %q: %w", name, err)
 		return 0, false
@@ -139,11 +134,6 @@ func (d *DBStorage) GetCounter(name string) (int64, bool) {
 	counter := d.db.QueryRowContext(ctx, getCounterQuery, name)
 
 	err := counter.Scan(&value)
-
-	if err == sql.ErrNoRows {
-		d.logger.Sugar().Infof("metric %q not found", name)
-		return 0, false
-	}
 	if err != nil {
 		d.logger.Sugar().Infof("failed to get metric %q: %w", name, err)
 		return 0, false

@@ -5,6 +5,7 @@ import (
 
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestService_UpdateCounter(t *testing.T) {
@@ -51,7 +52,7 @@ func TestService_UpdateCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService(storage)
+			service := NewService(storage, &zap.Logger{})
 
 			var counterName string
 			for _, c := range tt.input {
@@ -132,7 +133,7 @@ func TestService_GetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService(storage)
+			service := NewService(storage, &zap.Logger{})
 			service.UpdateGauge(tt.input.name, tt.input.value)
 
 			value, ok := service.GetGauge(tt.key)
@@ -173,7 +174,7 @@ func TestService_GetCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService(storage)
+			service := NewService(storage, &zap.Logger{})
 			service.UpdateCounter(tt.input.name, tt.input.value)
 
 			value, ok := service.GetCounter(tt.key)
@@ -207,7 +208,7 @@ func TestService_GetAllCounters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService(storage)
+			service := NewService(storage, &zap.Logger{})
 			service.UpdateCounter(tt.mock.name, tt.mock.value)
 			gauges, err := service.GetAllCounters()
 			assert.NoError(t, err)
@@ -240,7 +241,7 @@ func TestService_GetAllGauges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
-			service := NewService(storage)
+			service := NewService(storage, &zap.Logger{})
 			service.UpdateGauge(tt.mock.name, tt.mock.value)
 			gauges, err := service.GetAllGauges()
 			assert.NoError(t, err)
