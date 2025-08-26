@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"sync"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -67,18 +68,21 @@ func (m *MemStorage) GetAllCounters() (map[string]int64, error) {
 }
 
 func (m *MemStorage) SetMetricBatch(metrics []models.Metrics) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	for _, metric := range metrics {
 		switch metric.MType {
 		case "gauge":
-			err := m.SetGauge(metric.ID, float64(*metric.Value))
+			if metric.Value == nil {
+				return fmt.Errorf("gauge %s has no value", metric.ID)
+			}
+			err := m.SetGauge(metric.ID, *metric.Value)
 			if err != nil {
 				return err
 			}
 		case "counter":
-			err := m.SetCounter(metric.ID, int64(*metric.Delta))
+			if metric.Delta == nil {
+				return fmt.Errorf("counter %s has no delta", metric.ID)
+			}
+			err := m.SetCounter(metric.ID, *metric.Delta)
 			if err != nil {
 				return err
 			}

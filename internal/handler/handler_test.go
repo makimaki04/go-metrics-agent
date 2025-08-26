@@ -80,7 +80,7 @@ func TestHandler_PostMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
 			service := service.NewService(storage, &zap.Logger{})
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 
 			r := chi.NewRouter()
 			r.Post("/update/{MType}/{ID}/{value}", handler.HandleReq)
@@ -125,7 +125,7 @@ func TestHandler_GetAllMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
 			service := service.NewService(storage, &zap.Logger{})
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 
 			service.UpdateCounter("PollCount", 1)
 
@@ -179,7 +179,7 @@ func TestHandler_GetMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := repository.NewStorage()
 			service := service.NewService(storage, &zap.Logger{})
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 			
 			service.UpdateCounter("PollCount", 1)
 

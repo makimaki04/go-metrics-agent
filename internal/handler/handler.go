@@ -2,11 +2,15 @@ package handler
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
@@ -14,11 +18,13 @@ import (
 
 type Handler struct {
 	service service.MetricsService
+	key []byte
 }
 
-func NewHandler(service service.MetricsService) *Handler {
+func NewHandler(service service.MetricsService, key string) *Handler {
 	return &Handler{
 		service: service,
+		key: []byte(key),
 	}
 }
 
@@ -222,7 +228,20 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if headerHex := r.Header.Get("HashSHA256"); headerHex != "" {
+		checkHash := sha256.Sum256(append(buf.Bytes(), h.key...))
+		checkHex := hex.EncodeToString(checkHash[:])
+
+		if checkHex != headerHex {
+			respondWithError(w, http.StatusBadRequest, `{"error": "something went wrong"}`)
+			return
+		}
+		log.Printf("Hashes are equal:\n %s\n %s", headerHex, checkHex)
+	}
+
+
 	if err := json.Unmarshal(buf.Bytes(), &metrics); err != nil {
+		log.Printf("failed to unmarshal batch: %v\nraw body: %s", err, buf.String())
 		respondWithError(w, http.StatusUnprocessableEntity, `{"error": "wrong body structure"}`)
 		return
 	}

@@ -55,7 +55,7 @@ func TestSender_SendMetrics(t *testing.T) {
 	defer testServer.Close()
 
 	storage := &mockStorage{}
-	sender := NewSender(resty.New(), testServer.URL, storage)
+	sender := NewSender(resty.New(), testServer.URL, storage, "")
 
 	sender.SendMetrics()
 

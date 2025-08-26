@@ -13,6 +13,7 @@ type config struct {
 	FilePath string `env:"FILE_STORAGE_PATH"`
 	Restore  bool   `env:"RESTORE"`
 	DSN      string `env:"DATABASE_DSN"`
+	KEY 	 string `env:"KEY"`
 }
 
 var cfg config
@@ -23,6 +24,7 @@ func setConfig() {
 	flag.StringVar(&cfg.FilePath, "f", "", "storage file path")
 	flag.BoolVar(&cfg.Restore, "r", false, "should load data from local file when starting the server")
 	flag.StringVar(&cfg.DSN, "d", "", "databse connection string")
+	flag.StringVar(&cfg.KEY, "k", "", "key value")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

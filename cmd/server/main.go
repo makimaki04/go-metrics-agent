@@ -50,7 +50,7 @@ func main() {
 		logger.Info("In-memory storage initialized")
 	}
 
-	handler := handler.NewHandler(mService)
+	handler := handler.NewHandler(mService, cfg.KEY)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {

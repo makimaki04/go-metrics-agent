@@ -19,7 +19,7 @@ func main() {
 	storage := agent.NewLocalStorage()
 	collector := agent.NewCollector(storage)
 	client := resty.New()
-	sender := agent.NewSender(client, url, storage)
+	sender := agent.NewSender(client, url, storage, cfg.Key)
 
 	collectTicker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 	sendTicker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
@@ -34,7 +34,7 @@ func main() {
 		case <-collectTicker.C:
 			collector.CollectMetrics()
 		case <-sendTicker.C:
-			err := sender.SendMetrics()
+			err := sender.SendMetricsBatch()
 			if err != nil {
 				log.Printf("error sending data: %v", err)
 			} else {
