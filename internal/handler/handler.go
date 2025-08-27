@@ -18,13 +18,13 @@ import (
 
 type Handler struct {
 	service service.MetricsService
-	key []byte
+	key     []byte
 }
 
 func NewHandler(service service.MetricsService, key string) *Handler {
 	return &Handler{
 		service: service,
-		key: []byte(key),
+		key:     []byte(key),
 	}
 }
 
@@ -102,12 +102,12 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templateData := struct{
+	templateData := struct {
 		Counters map[string]int64
-		Gauges map[string]float64
+		Gauges   map[string]float64
 	}{
 		Counters: counters,
-		Gauges: gauges,
+		Gauges:   gauges,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -211,7 +211,7 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.service.UpdateMetric(metric); err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
-    	return
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -228,7 +228,7 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if headerHex := r.Header.Get("HashSHA256"); headerHex != "" {
+	if headerHex := r.Header.Get("HashSHA256"); headerHex != "" && len(h.key) > 0 {
 		checkHash := sha256.Sum256(append(buf.Bytes(), h.key...))
 		checkHex := hex.EncodeToString(checkHash[:])
 
@@ -238,7 +238,6 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("Hashes are equal:\n %s\n %s", headerHex, checkHex)
 	}
-
 
 	if err := json.Unmarshal(buf.Bytes(), &metrics); err != nil {
 		log.Printf("failed to unmarshal batch: %v\nraw body: %s", err, buf.String())
