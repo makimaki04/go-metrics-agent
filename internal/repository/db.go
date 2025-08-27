@@ -202,11 +202,16 @@ func (d *DBStorage) SetMetricBatch(metrics []models.Metrics) error {
 	for _, m := range metrics {
 		switch m.MType {
 		case "gauge":
+			if m.Value == nil {
+				return fmt.Errorf("gauge %s has no value", m.ID)
+			}
 			if _, err := stmtGauge.ExecContext(ctx, m.ID, *m.Value); err != nil {
 				return fmt.Errorf("failed to insert gauge %s: %w", m.ID, err)
 			}
-
 		case "counter":
+			if m.Delta == nil {
+				return fmt.Errorf("counter %s has no delta", m.ID)
+			}
 			if _, err := stmtCounter.ExecContext(ctx, m.ID, *m.Delta); err != nil {
 				return fmt.Errorf("failed to insert counter %s: %w", m.ID, err)
 			}
