@@ -2,8 +2,8 @@ package handler
 
 import (
 	"bytes"
-	// "crypto/sha256"
-	// "encoding/hex"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -228,16 +228,17 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if headerHex := r.Header.Get("HashSHA256"); headerHex != "" && len(h.key) > 0 {
-	// 	checkHash := sha256.Sum256(append(buf.Bytes(), h.key...))
-	// 	checkHex := hex.EncodeToString(checkHash[:])
+	if len(h.key) > 0 {
+		headerHex := r.Header.Get("HashSHA256")
+		checkHash := sha256.Sum256(append(buf.Bytes(), h.key...))
+		checkHex := hex.EncodeToString(checkHash[:])
 
-	// 	if checkHex != headerHex {
-	// 		respondWithError(w, http.StatusBadRequest, `{"error": "something went wrong"}`)
-	// 		return
-	// 	}
-	// 	log.Printf("Hashes are equal:\n %s\n %s", headerHex, checkHex)
-	// }
+		if checkHex != headerHex {
+			respondWithError(w, http.StatusBadRequest, `{"error": "something went wrong"}`)
+			return
+		}
+		log.Printf("Hashes are equal:\n %s\n %s", headerHex, checkHex)
+	}
 
 	if err := json.Unmarshal(buf.Bytes(), &metrics); err != nil {
 		log.Printf("failed to unmarshal batch: %v\nraw body: %s", err, buf.String())
