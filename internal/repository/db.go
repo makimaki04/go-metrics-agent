@@ -77,7 +77,10 @@ func (d *DBStorage) GetGauge(name string) (float64, bool) {
 
 	err := gauge.Scan(&value)
 	if err != nil {
-		d.logger.Sugar().Infof("failed to get metric %q: %w", name, err)
+		d.logger.Info("failed to get metric",
+			zap.String("name", name),
+			zap.Error(err),
+		)
 		return 0, false
 	}
 
@@ -135,7 +138,10 @@ func (d *DBStorage) GetCounter(name string) (int64, bool) {
 
 	err := counter.Scan(&value)
 	if err != nil {
-		d.logger.Sugar().Infof("failed to get metric %q: %w", name, err)
+		d.logger.Info("failed to get metric",
+			zap.String("name", name),
+			zap.Error(err),
+		)
 		return 0, false
 	}
 
@@ -199,15 +205,16 @@ func (d *DBStorage) SetMetricBatch(metrics []models.Metrics) error {
 			if m.Value == nil {
 				return fmt.Errorf("gauge %s has no value", m.ID)
 			}
-			if _, err := stmtGauge.ExecContext(ctx, m.ID, m.Value); err != nil {
-				return err
+			if _, err := stmtGauge.ExecContext(ctx, m.ID, *m.Value); err != nil {
+				return fmt.Errorf("failed to insert gauge %s: %w", m.ID, err)
 			}
+
 		case "counter":
 			if m.Delta == nil {
 				return fmt.Errorf("counter %s has no delta", m.ID)
 			}
-			if _, err := stmtCounter.ExecContext(ctx, m.ID, m.Delta); err != nil {
-				return err
+			if _, err := stmtCounter.ExecContext(ctx, m.ID, *m.Delta); err != nil {
+				return fmt.Errorf("failed to insert counter %s: %w", m.ID, err)
 			}
 		}
 	}
