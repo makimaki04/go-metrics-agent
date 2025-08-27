@@ -125,7 +125,11 @@ func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 		SetBody(body)
 
 	if len(s.key) > 0 {
-		hash := sha256.Sum256(append(body, s.key...))
+		json, err := json.Marshal(batch)
+		if err != nil {
+			return err
+		}
+		hash := sha256.Sum256(append(json, s.key...))
 		hex := hex.EncodeToString(hash[:])
 		req.SetHeader("HashSHA256", hex)
 	}
