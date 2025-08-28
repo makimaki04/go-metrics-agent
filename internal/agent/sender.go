@@ -89,23 +89,23 @@ func (s Sender) SendMetricsV2() error {
 	return nil
 }
 
-func (s Sender) SendMetricsBatch() error {
+func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
 	url := fmt.Sprintf("%s/updates", s.baseURL)
 	metrics := s.storage.GetAll()
-	batch := make([]models.Metrics, 0, 100)
+	batchCopy := batch
 
 	for _, m := range metrics {
-		batch = append(batch, m)
-		if len(batch) == 100 {
-			if err := s.sendBatch(url, batch); err != nil {
+		batchCopy = append(batchCopy, m)
+		if len(batchCopy) == 100 {
+			if err := s.sendBatch(url, batchCopy); err != nil {
 				return err
 			}
-			batch = batch[:0]
+			batchCopy = batchCopy[:0]
     	}
 	}
 
-	if len(batch) > 0 {
-		if err := s.sendBatch(url, batch); err != nil {
+	if len(batchCopy) > 0 {
+		if err := s.sendBatch(url, batchCopy); err != nil {
 			return err
 		}
 	}
