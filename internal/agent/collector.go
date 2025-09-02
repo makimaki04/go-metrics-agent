@@ -3,13 +3,17 @@ package agent
 import (
 	"math/rand"
 	"runtime"
+	"sync/atomic"
+	"time"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 type Collector struct {
 	storage   CollectorStorageInterface
-	pollCount int64
+	pollCount atomic.Int64
 }
 
 type CollectorStorageInterface interface {
@@ -20,7 +24,7 @@ func NewCollector(storage CollectorStorageInterface) *Collector {
 	return &Collector{storage: storage}
 }
 
-func (c *Collector) CollectMetrics() {
+func (c *Collector) CollectRuntimeMetrics() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
@@ -63,11 +67,12 @@ func (c *Collector) CollectMetrics() {
 		})
 	}
 
-	c.pollCount++
+	c.pollCount.Add(1)
+	val := c.pollCount.Load()
 	c.storage.SetMetric("PollCount", models.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
-		Delta: &c.pollCount,
+		Delta: &val,
 	})
 
 	randomValue := rand.Float64() * 100
@@ -79,5 +84,31 @@ func (c *Collector) CollectMetrics() {
 }
 
 func (c *Collector) ResetPollCount() {
-	c.pollCount = 0
+	c.pollCount.Store(0)
+}
+
+func (c *Collector) CollectSysMetrics() {
+	v,_ := mem.VirtualMemory()
+	totalMemory := float64(v.Total)
+	freeMemory := float64(v.Free)
+	CPUutilization1, _ := cpu.Percent(time.Second, false)
+
+	c.storage.SetMetric("TotalMemory", models.Metrics{
+		ID: "TotalMemory",
+		MType: "gauge",
+		Value: &totalMemory,
+	})
+
+	c.storage.SetMetric("FreeMemory", models.Metrics{
+		ID: "FreeMemory",
+		MType: "gauge",
+		Value: &freeMemory,
+	})
+
+	c.storage.SetMetric("CPUutilization1", models.Metrics{
+		ID: "CPUutilization1",
+		MType: "gauge",
+		Value: &CPUutilization1[0],
+	})
+
 }
