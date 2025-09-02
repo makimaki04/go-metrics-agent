@@ -3,6 +3,7 @@ package agent
 import (
 	"math/rand"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -12,7 +13,7 @@ import (
 
 type Collector struct {
 	storage   CollectorStorageInterface
-	pollCount int64
+	pollCount atomic.Int64
 }
 
 type CollectorStorageInterface interface {
@@ -66,11 +67,12 @@ func (c *Collector) CollectRuntimeMetrics() {
 		})
 	}
 
-	c.pollCount++
+	c.pollCount.Add(1)
+	val := c.pollCount.Load()
 	c.storage.SetMetric("PollCount", models.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
-		Delta: &c.pollCount,
+		Delta: &val,
 	})
 
 	randomValue := rand.Float64() * 100
@@ -82,7 +84,7 @@ func (c *Collector) CollectRuntimeMetrics() {
 }
 
 func (c *Collector) ResetPollCount() {
-	c.pollCount = 0
+	c.pollCount.Store(0)
 }
 
 func (c *Collector) CollectSysMetrics() {
