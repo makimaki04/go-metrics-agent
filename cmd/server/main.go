@@ -14,6 +14,7 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
+	"github.com/makimaki04/go-metrics-agent.git/internal/observer"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
@@ -49,6 +50,8 @@ func main() {
 		mService = service.NewService(storage, logger)
 		logger.Info("In-memory storage initialized")
 	}
+
+	InitObservers(mService, logger)
 
 	handler := handler.NewHandler(mService, cfg.KEY)
 
@@ -195,5 +198,27 @@ func initFileStorage(service service.MetricsService, logger *zap.Logger) {
 				saveMetricsToFile(cfg.FilePath, service, logger)
 			}
 		}()
+	}
+}
+
+func InitObservers(service service.MetricsService, logger *zap.Logger) {
+	if cfg.AuditFile != "" {
+		fObs := &observer.FileObserver{
+			FilePath: cfg.AuditFile,
+			Logger: logger,
+		}
+
+		service.RegisterObserver(fObs)
+		logger.Info("file observer successfully registered in service")
+	}
+
+	if cfg.AuditURL != "" {
+		httpObs := &observer.HTTPObserver{
+			URL: cfg.AuditURL,
+			Logger: logger,
+		}
+
+		service.RegisterObserver(httpObs)
+		logger.Info("http observer successfully registered in service")
 	}
 }

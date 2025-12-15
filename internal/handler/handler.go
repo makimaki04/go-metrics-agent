@@ -2,17 +2,21 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
+	"github.com/makimaki04/go-metrics-agent.git/internal/observer"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 )
 
@@ -189,7 +193,9 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.UpdateMetric(metric)
+	ctx := context.WithValue(context.Background(), observer.ReqIDKey, getClientID(r))
+
+	h.service.UpdateMetric(ctx, metric)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
@@ -209,7 +215,9 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.UpdateMetric(metric); err != nil {
+	ctx := context.WithValue(context.Background(), observer.ReqIDKey, getClientID(r))
+
+	if err := h.service.UpdateMetric(ctx, metric); err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
 		return
 	}
@@ -246,7 +254,8 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.UpdateMetricBatch(metrics); err != nil {
+	ctx := context.WithValue(context.Background(), observer.ReqIDKey, getClientID(r))
+	if err := h.service.UpdateMetricBatch(ctx, metrics); err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
 		return
 	}
@@ -313,4 +322,19 @@ func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	w.WriteHeader(code)
 	w.Write([]byte(message))
+}
+
+func getClientID(r *http.Request) string {
+	if frw := r.Header.Get("X-Forwarded-For"); frw != "" {
+		ips := strings.Split(frw, ",")
+
+		return strings.TrimSpace(ips[0])
+	}
+
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+
+	return host
 }

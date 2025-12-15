@@ -8,12 +8,14 @@ import (
 )
 
 type config struct {
-	Address  string `env:"ADDRESS"`
-	StoreInt int    `env:"STORE_INTERVAL"`
-	FilePath string `env:"FILE_STORAGE_PATH"`
-	Restore  bool   `env:"RESTORE"`
-	DSN      string `env:"DATABASE_DSN"`
-	KEY 	 string `env:"KEY"`
+	Address   string `env:"ADDRESS"`
+	StoreInt  int    `env:"STORE_INTERVAL"`
+	FilePath  string `env:"FILE_STORAGE_PATH"`
+	Restore   bool   `env:"RESTORE"`
+	DSN       string `env:"DATABASE_DSN"`
+	KEY       string `env:"KEY"`
+	AuditFile string `env:"AUDIT_FILE"`
+	AuditURL string `env:"AUDIT_URL"`
 }
 
 var cfg config
@@ -25,6 +27,8 @@ func setConfig() {
 	flag.BoolVar(&cfg.Restore, "r", false, "should load data from local file when starting the server")
 	flag.StringVar(&cfg.DSN, "d", "", "databse connection string")
 	flag.StringVar(&cfg.KEY, "k", "", "key value")
+	flag.StringVar(&cfg.AuditFile, "audit-file", "", "audit file address")
+	flag.StringVar(&cfg.AuditURL, "audit-url", "", "audit url")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -36,5 +40,6 @@ func setConfig() {
 
 //../../data/save.json
 
-
 //"postgres://metrics_user:password@localhost:5432/metrics_db?sslmode=disable"
+
+//"../..data/audit_file.json"

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,12 +11,13 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
+	"github.com/makimaki04/go-metrics-agent.git/internal/observer"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"go.uber.org/zap"
 )
 
 type MetricsService interface {
-	UpdateMetric(metric models.Metrics) error
+	UpdateMetric(ctx context.Context, metric models.Metrics) error
 	UpdateGauge(name string, value float64) error
 	GetGauge(name string) (float64, bool)
 	GetAllGauges() (map[string]float64, error)
@@ -23,13 +25,15 @@ type MetricsService interface {
 	GetCounter(name string) (int64, bool)
 	GetAllCounters() (map[string]int64, error)
 	SetLocalStorage(storage repository.Repository)
-	UpdateMetricBatch(metrics []models.Metrics) error
+	UpdateMetricBatch(ctx context.Context, metrics []models.Metrics) error
 	PingDB() error
+	RegisterObserver(o observer.Observer)
 }
 
 type Service struct {
-	storage repository.Repository
-	logger  *zap.Logger
+	storage  repository.Repository
+	logger   *zap.Logger
+	observers []observer.Observer
 }
 
 func NewService(storage repository.Repository, logger *zap.Logger) MetricsService {
@@ -39,22 +43,56 @@ func NewService(storage repository.Repository, logger *zap.Logger) MetricsServic
 	}
 }
 
-func (s *Service) UpdateMetric(metric models.Metrics) error {
+func (s *Service) UpdateMetric(ctx context.Context, metric models.Metrics) error {
 	switch metric.MType {
 	case models.Counter:
 		if metric.Delta == nil {
 			return fmt.Errorf("metric %q: Delta is nil", metric.ID)
 		}
-		return s.UpdateCounter(metric.ID, *metric.Delta)
+		if err := s.UpdateCounter(metric.ID, *metric.Delta); err != nil {
+			return fmt.Errorf("failed to update metric: %w", err)
+		}
+
+		s.sendMetricEvent(ctx, metric.ID)
+		return nil
 	case models.Gauge:
 		if metric.Value == nil {
 			return fmt.Errorf("metric %q: Value is nil", metric.ID)
 		}
-		return s.UpdateGauge(metric.ID, *metric.Value)
+		if err := s.UpdateGauge(metric.ID, *metric.Value); err != nil {
+			return fmt.Errorf("failed to update metric: %w", err)
+		}
+
+		s.sendMetricEvent(ctx, metric.ID)
 	}
 
 	return fmt.Errorf("unknown metric type: %q", metric.MType)
 }
+
+func (s *Service) sendMetricEvent(ctx context.Context, id string) {
+	var ids []string
+
+	ids = append(ids, id)
+
+	event := observer.AuditEvent{
+		TimeStamp: int(time.Now().Unix()),
+		Metrics: ids,
+		IPAddress: idFromContext(ctx),
+	}
+
+	for _, o := range s.observers {
+		o.Notify(ctx, event)
+	}
+}
+
+func idFromContext(ctx context.Context) string {
+	ip, ok := ctx.Value(observer.ReqIDKey).(string)
+    if !ok {
+        return "unknown"
+    }
+    return ip
+}
+
 
 func (s *Service) UpdateGauge(name string, value float64) error {
 	return withRetry(func() error {
@@ -106,10 +144,35 @@ func (s *Service) SetLocalStorage(storage repository.Repository) {
 	s.storage = storage
 }
 
-func (s *Service) UpdateMetricBatch(metrics []models.Metrics) error {
-	return withRetry(func() error {
+func (s *Service) UpdateMetricBatch(ctx context.Context, metrics []models.Metrics) error {
+	err := withRetry(func() error {
 		return s.storage.SetMetricBatch(metrics)
 	}, s.logger)
+
+	if err != nil {
+		return err
+	}
+
+	ids := make([]string, 0, len(metrics))
+	for _, m := range metrics {
+		ids = append(ids, m.ID)
+	}
+
+	s.sendMetricBatchEvent(ctx, ids)
+
+	return nil
+}
+
+func (s *Service) sendMetricBatchEvent(ctx context.Context, ids []string) {
+	event := observer.AuditEvent{
+		TimeStamp: int(time.Now().Unix()),
+		Metrics: ids,
+		IPAddress: idFromContext(ctx),
+	}
+
+	for _, o := range s.observers {
+		o.Notify(ctx, event)
+	}
 }
 
 func (s *Service) PingDB() error {
@@ -171,4 +234,8 @@ func retryValue[T any](fn func() (T, error), logger *zap.Logger) (T, error) {
 	}, logger)
 
 	return result, err
+}
+
+func (s *Service) RegisterObserver(o observer.Observer) {
+	s.observers = append(s.observers, o)
 }
