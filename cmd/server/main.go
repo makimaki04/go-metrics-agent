@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"time"
 
@@ -79,10 +82,39 @@ func main() {
 
 	})
 
-	err := http.ListenAndServe(cfg.Address, r)
-	if err != nil {
-		panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+	pprofServer := &http.Server{
+		Addr: cfg.PprofServer,
 	}
+
+	APIServer := &http.Server{
+		Addr: cfg.Address,
+		Handler: r,
+	}
+
+	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	go func () {
+		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Sugar().Warnf("pprof server failed to start on %s: %w", cfg.PprofServer, err)
+		}
+	}()
+
+	go func () {
+		if err := APIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+		}
+	}()
+
+	<-signalctx.Done()
+	shutDownCtx, cancel := context.WithTimeout(
+	context.Background(), 
+	3*time.Second,
+	)
+	defer cancel()
+	
+	APIServer.Shutdown(shutDownCtx)
+	pprofServer.Shutdown(shutDownCtx)
 }
 
 func loadMetricsFromFile(path string, service service.MetricsService, logger *zap.Logger) {

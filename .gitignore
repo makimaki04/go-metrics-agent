@@ -24,4 +24,4 @@ vendor/
 .idea
 .vscode
 
-data/save.json
+data/

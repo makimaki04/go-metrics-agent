@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"testing"
 
+	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -218,7 +220,7 @@ func TestService_GetAllCounters(t *testing.T) {
 }
 
 func TestService_GetAllGauges(t *testing.T) {
-		type mock struct {
+	type mock struct {
 		name  string
 		value float64
 	}
@@ -247,5 +249,36 @@ func TestService_GetAllGauges(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, gauges)
 		})
+	}
+}
+
+func BenchmarkUpdMetricButch(b *testing.B) {
+	storage := repository.NewStorage()
+	service := NewService(storage, &zap.Logger{})
+
+	size := 100
+	metrics := make([]models.Metrics, 0, size)
+	for i := 0; i < size; i++ {
+		if i % 2 == 0 {
+			d := int64(1)
+			metrics = append(metrics, models.Metrics{
+				ID: "Counter",
+				MType: "counter",
+				Delta: &d,
+			})
+		} else {
+			v := float64(12.3)
+			metrics = append(metrics,models.Metrics{
+				ID: "Gauge",
+				MType: "gauge",
+				Value: &v,
+			})
+		}
+	}
+
+	ctx := context.Background()
+
+	for i := 0; i < b.N; i++ {
+		service.UpdateMetricBatch(ctx, metrics)
 	}
 }

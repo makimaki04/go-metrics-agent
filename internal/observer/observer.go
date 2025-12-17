@@ -27,7 +27,7 @@ type FileObserver struct {
 }
 
 func (f *FileObserver) Notify(ctx context.Context, event AuditEvent) {
-	file, err := os.OpenFile(f.FilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	file, err := os.OpenFile(f.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		f.Logger.Error("Failed to open audit file for writing", zap.Error(err))
 		return

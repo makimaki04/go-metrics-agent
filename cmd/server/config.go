@@ -16,6 +16,7 @@ type config struct {
 	KEY       string `env:"KEY"`
 	AuditFile string `env:"AUDIT_FILE"`
 	AuditURL string `env:"AUDIT_URL"`
+	PprofServer string `env:"PPROF_SERVER"`
 }
 
 var cfg config
@@ -29,6 +30,7 @@ func setConfig() {
 	flag.StringVar(&cfg.KEY, "k", "", "key value")
 	flag.StringVar(&cfg.AuditFile, "audit-file", "", "audit file address")
 	flag.StringVar(&cfg.AuditURL, "audit-url", "", "audit url")
+	flag.StringVar(&cfg.PprofServer, "p", ":6060", "pprof server port")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -42,4 +44,4 @@ func setConfig() {
 
 //"postgres://metrics_user:password@localhost:5432/metrics_db?sslmode=disable"
 
-//"../..data/audit_file.json"
+//../../data/audit_file.json
