@@ -87,20 +87,20 @@ func main() {
 	}
 
 	APIServer := &http.Server{
-		Addr: cfg.Address,
+		Addr:    cfg.Address,
 		Handler: r,
 	}
 
 	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	go func () {
+	go func() {
 		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Sugar().Warnf("pprof server failed to start on %s: %w", cfg.PprofServer, err)
 		}
 	}()
 
-	go func () {
+	go func() {
 		if err := APIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
@@ -108,11 +108,11 @@ func main() {
 
 	<-signalctx.Done()
 	shutDownCtx, cancel := context.WithTimeout(
-	context.Background(), 
-	3*time.Second,
+		context.Background(),
+		3*time.Second,
 	)
 	defer cancel()
-	
+
 	APIServer.Shutdown(shutDownCtx)
 	pprofServer.Shutdown(shutDownCtx)
 }
@@ -237,7 +237,7 @@ func InitObservers(service service.MetricsService, logger *zap.Logger) {
 	if cfg.AuditFile != "" {
 		fObs := &observer.FileObserver{
 			FilePath: cfg.AuditFile,
-			Logger: logger,
+			Logger:   logger,
 		}
 
 		service.RegisterObserver(fObs)
@@ -246,7 +246,7 @@ func InitObservers(service service.MetricsService, logger *zap.Logger) {
 
 	if cfg.AuditURL != "" {
 		httpObs := &observer.HTTPObserver{
-			URL: cfg.AuditURL,
+			URL:    cfg.AuditURL,
 			Logger: logger,
 		}
 

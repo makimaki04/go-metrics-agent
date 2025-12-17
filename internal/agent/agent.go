@@ -13,17 +13,17 @@ import (
 )
 
 type Agent struct {
-	cfg agentconfig.Config
-	storage *LocalStorage
+	cfg       agentconfig.Config
+	storage   *LocalStorage
 	collector *Collector
-	sender *Sender
+	sender    *Sender
 
 	collectTicker *time.Ticker
-	sendTicker *time.Ticker
-	metricsCh chan models.Metrics
-	wg sync.WaitGroup
-	ctx context.Context
-	cancel context.CancelFunc
+	sendTicker    *time.Ticker
+	metricsCh     chan models.Metrics
+	wg            sync.WaitGroup
+	ctx           context.Context
+	cancel        context.CancelFunc
 }
 
 func NewAgent(cfg agentconfig.Config) *Agent {
@@ -35,17 +35,17 @@ func NewAgent(cfg agentconfig.Config) *Agent {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-    return &Agent{
-        cfg:          cfg,
-        storage:      storage,
-        collector:    collector,
-        sender:       sender,
-        collectTicker: time.NewTicker(time.Duration(cfg.PollInterval) * time.Second),
-        sendTicker:   time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second),
-        metricsCh:    make(chan models.Metrics, cfg.RateLimit),
-        ctx:          ctx,
-        cancel:       cancel,
-    }
+	return &Agent{
+		cfg:           cfg,
+		storage:       storage,
+		collector:     collector,
+		sender:        sender,
+		collectTicker: time.NewTicker(time.Duration(cfg.PollInterval) * time.Second),
+		sendTicker:    time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second),
+		metricsCh:     make(chan models.Metrics, cfg.RateLimit),
+		ctx:           ctx,
+		cancel:        cancel,
+	}
 }
 
 func (a *Agent) Run() {
@@ -58,7 +58,7 @@ func (a *Agent) Run() {
 		go a.worker()
 	}
 
-	<- a.ctx.Done()
+	<-a.ctx.Done()
 	a.wg.Wait()
 	fmt.Println("Agent was shutdown")
 }
@@ -72,9 +72,9 @@ func (a *Agent) Stop() {
 func (a *Agent) runRuntimeCollector() {
 	for {
 		select {
-		case <- a.collectTicker.C:
-				a.collector.CollectRuntimeMetrics()
-		case <- a.ctx.Done():
+		case <-a.collectTicker.C:
+			a.collector.CollectRuntimeMetrics()
+		case <-a.ctx.Done():
 			return
 		}
 	}
@@ -83,9 +83,9 @@ func (a *Agent) runRuntimeCollector() {
 func (a *Agent) runSysCollector() {
 	for {
 		select {
-		case <- a.collectTicker.C:
+		case <-a.collectTicker.C:
 			a.collector.CollectSysMetrics()
-		case <- a.ctx.Done():
+		case <-a.ctx.Done():
 			return
 		}
 	}
@@ -95,15 +95,15 @@ func (a *Agent) runSender() {
 	defer close(a.metricsCh)
 	for {
 		select {
-		case <- a.sendTicker.C:
+		case <-a.sendTicker.C:
 			metrics := a.storage.GetAll()
 			for _, m := range metrics {
 				a.metricsCh <- m
 			}
 			a.collector.ResetPollCount()
-		case <- a.ctx.Done():
+		case <-a.ctx.Done():
 			return
-	}
+		}
 	}
 }
 
@@ -121,7 +121,7 @@ func (a *Agent) worker() {
 			batch = batch[:0]
 		}
 	}
-	
+
 	if len(batch) > 0 {
 		err := a.sender.SendMetricsBatch(batch)
 		if err != nil {

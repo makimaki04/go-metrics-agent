@@ -8,16 +8,16 @@ import (
 )
 
 func TestCollector_CollcetMetrics(t *testing.T) {
-	tests := []struct{
-		name string
+	tests := []struct {
+		name    string
 		metrics map[string]float64
 	}{
 		{
-				name: "Collector simple test",
-				metrics: map[string]float64{
-					"Alloc": float64(15.15),
-				},
-		},	
+			name: "Collector simple test",
+			metrics: map[string]float64{
+				"Alloc": float64(15.15),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -26,7 +26,7 @@ func TestCollector_CollcetMetrics(t *testing.T) {
 			for name, val := range tt.metrics {
 				v := val
 				storage.SetMetric(name, models.Metrics{
-					ID: name,
+					ID:    name,
 					MType: "gauge",
 					Value: &v,
 				})

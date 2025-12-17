@@ -22,11 +22,11 @@ func RunMigration(dsn string) error {
 	m, err := migrate.NewWithSourceInstance("iofs", d, dsn)
 
 	if err != nil {
-		return  fmt.Errorf("failed to return a new migrate: %w", err)
+		return fmt.Errorf("failed to return a new migrate: %w", err)
 	}
 
 	if err := m.Up(); err != nil {
-		if !errors.Is(err,  migrate.ErrNoChange) {
+		if !errors.Is(err, migrate.ErrNoChange) {
 			return fmt.Errorf("failed to load migrations: %w", err)
 		}
 	}

@@ -8,14 +8,14 @@ import (
 )
 
 type config struct {
-	Address   string `env:"ADDRESS"`
-	StoreInt  int    `env:"STORE_INTERVAL"`
-	FilePath  string `env:"FILE_STORAGE_PATH"`
-	Restore   bool   `env:"RESTORE"`
-	DSN       string `env:"DATABASE_DSN"`
-	KEY       string `env:"KEY"`
-	AuditFile string `env:"AUDIT_FILE"`
-	AuditURL string `env:"AUDIT_URL"`
+	Address     string `env:"ADDRESS"`
+	StoreInt    int    `env:"STORE_INTERVAL"`
+	FilePath    string `env:"FILE_STORAGE_PATH"`
+	Restore     bool   `env:"RESTORE"`
+	DSN         string `env:"DATABASE_DSN"`
+	KEY         string `env:"KEY"`
+	AuditFile   string `env:"AUDIT_FILE"`
+	AuditURL    string `env:"AUDIT_URL"`
 	PprofServer string `env:"PPROF_SERVER"`
 }
 

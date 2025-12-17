@@ -8,7 +8,7 @@ import (
 
 type LocalStorage struct {
 	metrics map[string]models.Metrics
-	mu sync.RWMutex
+	mu      sync.RWMutex
 }
 
 func NewLocalStorage() *LocalStorage {
@@ -35,10 +35,10 @@ func (l *LocalStorage) GetMetric(name string) (models.Metrics, bool) {
 func (l *LocalStorage) GetAll() map[string]models.Metrics {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	copy := make(map[string]models.Metrics)
 	for k, v := range l.metrics {
 		copy[k] = v
 	}
 	return copy
-} 
+}

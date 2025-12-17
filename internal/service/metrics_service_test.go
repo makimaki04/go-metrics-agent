@@ -259,17 +259,17 @@ func BenchmarkUpdMetricButch(b *testing.B) {
 	size := 100
 	metrics := make([]models.Metrics, 0, size)
 	for i := 0; i < size; i++ {
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			d := int64(1)
 			metrics = append(metrics, models.Metrics{
-				ID: "Counter",
+				ID:    "Counter",
 				MType: "counter",
 				Delta: &d,
 			})
 		} else {
 			v := float64(12.3)
-			metrics = append(metrics,models.Metrics{
-				ID: "Gauge",
+			metrics = append(metrics, models.Metrics{
+				ID:    "Gauge",
 				MType: "gauge",
 				Value: &v,
 			})

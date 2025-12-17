@@ -31,8 +31,8 @@ type MetricsService interface {
 }
 
 type Service struct {
-	storage  repository.Repository
-	logger   *zap.Logger
+	storage   repository.Repository
+	logger    *zap.Logger
 	observers []observer.Observer
 }
 
@@ -76,7 +76,7 @@ func (s *Service) sendMetricEvent(ctx context.Context, id string) {
 
 	event := observer.AuditEvent{
 		TimeStamp: int(time.Now().Unix()),
-		Metrics: ids,
+		Metrics:   ids,
 		IPAddress: idFromContext(ctx),
 	}
 
@@ -87,12 +87,11 @@ func (s *Service) sendMetricEvent(ctx context.Context, id string) {
 
 func idFromContext(ctx context.Context) string {
 	ip, ok := ctx.Value(observer.ReqIDKey).(string)
-    if !ok {
-        return "unknown"
-    }
-    return ip
+	if !ok {
+		return "unknown"
+	}
+	return ip
 }
-
 
 func (s *Service) UpdateGauge(name string, value float64) error {
 	return withRetry(func() error {
@@ -166,7 +165,7 @@ func (s *Service) UpdateMetricBatch(ctx context.Context, metrics []models.Metric
 func (s *Service) sendMetricBatchEvent(ctx context.Context, ids []string) {
 	event := observer.AuditEvent{
 		TimeStamp: int(time.Now().Unix()),
-		Metrics: ids,
+		Metrics:   ids,
 		IPAddress: idFromContext(ctx),
 	}
 

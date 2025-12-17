@@ -148,29 +148,29 @@ func TestHandler_GetAllMetrics(t *testing.T) {
 
 func TestHandler_GetMetric(t *testing.T) {
 	type want struct {
-		code int
+		code        int
 		contentType string
-		response string
+		response    string
 	}
 	tests := []struct {
-		name string
+		name    string
 		request string
-		want want
+		want    want
 	}{
 		{
-			name: "Get metric positive test",
+			name:    "Get metric positive test",
 			request: "/value/counter/PollCount",
 			want: want{
-				code: 200,
+				code:        200,
 				contentType: "text/plain",
-				response: "1",
+				response:    "1",
 			},
 		},
 		{
-			name: "Get metric negative test",
+			name:    "Get metric negative test",
 			request: "/value/counter/SomeMetric",
 			want: want{
-				code: 404,
+				code:     404,
 				response: `{"error": "invalid metric"}`,
 			},
 		},
@@ -180,7 +180,7 @@ func TestHandler_GetMetric(t *testing.T) {
 			storage := repository.NewStorage()
 			service := service.NewService(storage, &zap.Logger{})
 			handler := NewHandler(service, "")
-			
+
 			service.UpdateCounter("PollCount", 1)
 
 			r := chi.NewRouter()

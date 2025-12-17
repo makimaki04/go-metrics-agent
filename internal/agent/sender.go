@@ -18,7 +18,7 @@ type Sender struct {
 	client  *resty.Client
 	baseURL string
 	storage SenderStorageIntreface
-	key []byte
+	key     []byte
 }
 
 type SenderStorageIntreface interface {
@@ -27,10 +27,10 @@ type SenderStorageIntreface interface {
 
 func NewSender(client *resty.Client, url string, storage SenderStorageIntreface, key string) *Sender {
 	return &Sender{
-		client: client, 
-		baseURL: url, 
-		storage: storage, 
-		key: []byte(key),
+		client:  client,
+		baseURL: url,
+		storage: storage,
+		key:     []byte(key),
 	}
 }
 
@@ -43,7 +43,7 @@ func prepareGzipBody(data interface{}) ([]byte, error) {
 
 	w := gzip.NewWriter(&buf)
 	if _, err := w.Write(resp); err != nil {
-    	return nil, fmt.Errorf("gzip write error: %v", err)
+		return nil, fmt.Errorf("gzip write error: %v", err)
 	}
 	if err := w.Close(); err != nil {
 		return nil, fmt.Errorf("gzip close error: %v", err)
@@ -52,7 +52,7 @@ func prepareGzipBody(data interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-//Новая реализация отправки метрки к эндпоинту /update
+// Новая реализация отправки метрки к эндпоинту /update
 func (s Sender) SendMetricsV2() error {
 	url := fmt.Sprintf("%s/update", s.baseURL)
 	metrics := s.storage.GetAll()
@@ -101,7 +101,7 @@ func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
 				return err
 			}
 			batchCopy = batchCopy[:0]
-    	}
+		}
 	}
 
 	if len(batchCopy) > 0 {

@@ -88,25 +88,25 @@ func (c *Collector) ResetPollCount() {
 }
 
 func (c *Collector) CollectSysMetrics() {
-	v,_ := mem.VirtualMemory()
+	v, _ := mem.VirtualMemory()
 	totalMemory := float64(v.Total)
 	freeMemory := float64(v.Free)
 	CPUutilization1, _ := cpu.Percent(time.Second, false)
 
 	c.storage.SetMetric("TotalMemory", models.Metrics{
-		ID: "TotalMemory",
+		ID:    "TotalMemory",
 		MType: "gauge",
 		Value: &totalMemory,
 	})
 
 	c.storage.SetMetric("FreeMemory", models.Metrics{
-		ID: "FreeMemory",
+		ID:    "FreeMemory",
 		MType: "gauge",
 		Value: &freeMemory,
 	})
 
 	c.storage.SetMetric("CPUutilization1", models.Metrics{
-		ID: "CPUutilization1",
+		ID:    "CPUutilization1",
 		MType: "gauge",
 		Value: &CPUutilization1[0],
 	})

@@ -49,7 +49,7 @@ func (f *FileObserver) Notify(ctx context.Context, event AuditEvent) {
 }
 
 type HTTPObserver struct {
-	URL string
+	URL    string
 	Logger *zap.Logger
 }
 
@@ -60,12 +60,12 @@ func (h *HTTPObserver) Notify(ctx context.Context, event AuditEvent) {
 	body, err := json.Marshal(event)
 	if err != nil {
 		h.Logger.Error("Failed to create POST request", zap.Error(err))
-    	return
+		return
 	}
-	
+
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPost, 
-		h.URL, 
+		ctx, http.MethodPost,
+		h.URL,
 		bytes.NewReader(body),
 	)
 	if err != nil {
@@ -79,7 +79,7 @@ func (h *HTTPObserver) Notify(ctx context.Context, event AuditEvent) {
 	resp, err := client.Do(req)
 	if err != nil {
 		h.Logger.Error("Failed to send POST request", zap.Error(err))
-    	return
+		return
 	}
 	defer resp.Body.Close()
 
