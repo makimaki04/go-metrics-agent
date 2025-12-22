@@ -20,11 +20,13 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 )
 
+// Handler - struct for handling requests
 type Handler struct {
 	service service.MetricsService
 	key     []byte
 }
 
+// NewHandler - constructor for Handler
 func NewHandler(service service.MetricsService, key string) *Handler {
 	return &Handler{
 		service: service,
@@ -32,6 +34,9 @@ func NewHandler(service service.MetricsService, key string) *Handler {
 	}
 }
 
+// GetAllMetrics - method for getting all metrics
+// returns all gauges and counters in html format
+// if error, returns internal server error
 func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	gauges, err := h.service.GetAllGauges()
 	if err != nil {
@@ -121,6 +126,10 @@ func (h *Handler) GetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleReq - method for handling requests
+// handle GET and POST requests
+// if method is not allowed, return method not allowed
+// if success, return the value of the metric
 func (h *Handler) HandleReq(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -133,6 +142,10 @@ func (h *Handler) HandleReq(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetMetric - method for getting a metric
+// return the value of the metric
+// if error, return not found
+// if success, return the value of the metric
 func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	metric := models.Metrics{
 		ID:    chi.URLParam(r, ("ID")),
@@ -161,6 +174,10 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(value))
 }
 
+// PostMetric - method for posting a metric
+// update the value of the metric
+// if error, return bad request
+// if success, return ok
 func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	metric := models.Metrics{
 		ID:    chi.URLParam(r, "ID"),
@@ -200,6 +217,10 @@ func (h *Handler) PostMetric(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// UpdateMetric - method for updating a metric
+// update the value of the metric
+// if error, return bad request
+// if success, return ok
 func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	var metric models.Metrics
 	var buf bytes.Buffer
@@ -226,6 +247,10 @@ func (h *Handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// UpdateMetricBatch - method for updating a batch of metrics
+// update the value of the metrics
+// if error, return bad request
+// if success, return ok
 func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 	var metrics []models.Metrics
 	var buf bytes.Buffer
@@ -264,7 +289,11 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
+// PostMetricInfo - method for posting metric information
+// return the value of the metric
+// if error, return bad request
+// if success, return the value of the metric
+func (h *Handler) PostMetricInfo(w http.ResponseWriter, r *http.Request) {
 	var metric models.Metrics
 	var buf bytes.Buffer
 
@@ -308,6 +337,10 @@ func (h *Handler) PostMetrcInfo(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// PingDatabase - method for pinging the database
+// ping the database
+// if error, return internal server error
+// if success, return ok
 func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
 	err := h.service.PingDB()
 	if err != nil {
@@ -319,11 +352,19 @@ func (h *Handler) PingDatabase(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// respondWithError - method for responding with an error
+// respond with an error
+// if error, return error
+// if success, return ok
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	w.WriteHeader(code)
 	w.Write([]byte(message))
 }
 
+// getClientID - method for getting the client ID
+// get the client ID from the request
+// if error, return the remote address
+// if success, return the client ID
 func getClientID(r *http.Request) string {
 	if frw := r.Header.Get("X-Forwarded-For"); frw != "" {
 		ips := strings.Split(frw, ",")

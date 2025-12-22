@@ -62,7 +62,7 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.GetAllMetrics), handlersLogger))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetricInfo), handlersLogger))
 			r.Route("/{MType}/{ID}", func(r chi.Router) {
 				r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.HandleReq), handlersLogger))
 			})

@@ -13,6 +13,10 @@ import (
 //go:embed migration_files/*.sql
 var migrationsDir embed.FS
 
+//RunMigration - method for running the migrations
+//run the migrations
+//if error, return error
+//if success, return nil
 func RunMigration(dsn string) error {
 	d, err := iofs.New(migrationsDir, "migration_files")
 	if err != nil {

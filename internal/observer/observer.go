@@ -11,21 +11,34 @@ import (
 	"go.uber.org/zap"
 )
 
+// Observer - interface for the observer
+// Notify - method for notifying the observer about an audit event
+// ctx - context for the notification
+// event - audit event to notify about
 type Observer interface {
 	Notify(ctx context.Context, event AuditEvent)
 }
 
+// AuditEvent - struct for the audit event
+// TimeStamp - timestamp of the event
+// Metrics - metrics of the event
+// IPAddress - IP address of the event
 type AuditEvent struct {
 	TimeStamp int      `json:"ts"`
 	Metrics   []string `json:"metrics"`
 	IPAddress string   `json:"ip_address"`
 }
 
+// FileObserver - struct for the file observer
+// FilePath - path to the file
+// Logger - logger
 type FileObserver struct {
 	FilePath string
 	Logger   *zap.Logger
 }
 
+// Notify - method for notifying the file observer
+// notify the file observer
 func (f *FileObserver) Notify(ctx context.Context, event AuditEvent) {
 	file, err := os.OpenFile(f.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -48,11 +61,16 @@ func (f *FileObserver) Notify(ctx context.Context, event AuditEvent) {
 	f.Logger.Info("audit event successfully added to the audit local file in ./data/audit_file.json")
 }
 
+// HTTPObserver - struct for the HTTP observer
+// URL - URL of the HTTP server
+// Logger - logger
 type HTTPObserver struct {
 	URL    string
 	Logger *zap.Logger
 }
 
+// Notify - method for notifying the HTTP observer
+// notify the HTTP observer
 func (h *HTTPObserver) Notify(ctx context.Context, event AuditEvent) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -93,4 +111,6 @@ func (h *HTTPObserver) Notify(ctx context.Context, event AuditEvent) {
 
 type contextKey string
 
+// ReqIDKey - context key for storing request ID (client IP address)
+// used to identify the source of requests in audit events
 const ReqIDKey contextKey = "reqID"

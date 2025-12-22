@@ -14,6 +14,7 @@ import (
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 )
 
+//Sender - struct for the sender
 type Sender struct {
 	client  *resty.Client
 	baseURL string
@@ -21,10 +22,15 @@ type Sender struct {
 	key     []byte
 }
 
+//SenderStorageIntreface - interface for the sender storage
+//GetAll - method for getting all metrics from the storage
 type SenderStorageIntreface interface {
 	GetAll() map[string]models.Metrics
 }
 
+//NewSender - method for creating a new sender
+//create a new sender
+//if success, return nil
 func NewSender(client *resty.Client, url string, storage SenderStorageIntreface, key string) *Sender {
 	return &Sender{
 		client:  client,
@@ -34,6 +40,10 @@ func NewSender(client *resty.Client, url string, storage SenderStorageIntreface,
 	}
 }
 
+//prepareGzipBody - method for preparing the gzip body
+//prepare the gzip body
+//if error, return error
+//if success, return the gzip body
 func prepareGzipBody(data interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	resp, err := json.Marshal(data)
@@ -52,7 +62,10 @@ func prepareGzipBody(data interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Новая реализация отправки метрки к эндпоинту /update
+//SendMetricsV2 - method for sending metrics to the server
+//send the metrics to the server
+//if error, return error
+//if success, return nil
 func (s Sender) SendMetricsV2() error {
 	url := fmt.Sprintf("%s/update", s.baseURL)
 	metrics := s.storage.GetAll()
@@ -89,6 +102,10 @@ func (s Sender) SendMetricsV2() error {
 	return nil
 }
 
+//SendMetricsBatch - method for sending metrics batch to the server
+//send the metrics batch to the server
+//if error, return error
+//if success, return nil
 func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
 	url := fmt.Sprintf("%s/updates", s.baseURL)
 	metrics := s.storage.GetAll()
@@ -113,6 +130,10 @@ func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
 	return nil
 }
 
+//sendBatch - method for sending a batch of metrics to the server
+//send the batch of metrics to the server
+//if error, return error
+//if success, return nil
 func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 	body, err := prepareGzipBody(batch)
 	if err != nil {
@@ -150,7 +171,10 @@ func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 	return nil
 }
 
-// Старая реализация к эндпоинту update/{MType}/{ID}/{value}
+//old realization of sending metrics to the server
+//send the metrics to the server
+//if error, return error
+//if success, return nil
 func (s Sender) SendMetrics() error {
 	metrics := s.storage.GetAll()
 	for _, m := range metrics {

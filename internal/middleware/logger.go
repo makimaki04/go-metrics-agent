@@ -7,6 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
+//WithLogging - middleware for logging the request
+//logging request information
+//shows the request URI, method, headers, status, size, and duration
 func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

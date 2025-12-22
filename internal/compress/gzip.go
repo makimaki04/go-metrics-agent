@@ -7,6 +7,9 @@ import (
 	"sync"
 )
 
+// CompressWriter - wrapper for http.ResponseWriter that compresses response using gzip
+// ResponseWriter - underlying http.ResponseWriter
+// Writer - gzip writer for compression
 type CompressWriter struct {
 	http.ResponseWriter
 	Writer *gzip.Writer
@@ -18,6 +21,9 @@ var gzipWriterPool = sync.Pool{
 	},
 }
 
+// AcquireWriter - acquires a gzip.Writer from the pool and resets it for use
+// w - writer to reset the gzip writer for
+// returns a gzip.Writer ready for use
 func AcquireWriter(w io.Writer) *gzip.Writer {
 	gw := gzipWriterPool.Get().(*gzip.Writer)
 	gw.Reset(w)
@@ -25,6 +31,9 @@ func AcquireWriter(w io.Writer) *gzip.Writer {
 	return gw
 }
 
+// ReleaseWriter - releases a gzip.Writer back to the pool
+// closes the writer and resets it before returning to pool
+// gw - gzip writer to release
 func ReleaseWriter(gw *gzip.Writer) {
 	gw.Close()
 	gw.Reset(io.Discard)
@@ -32,6 +41,10 @@ func ReleaseWriter(gw *gzip.Writer) {
 	gzipWriterPool.Put(gw)
 }
 
+// NewCompressWriter - creates a new CompressWriter
+// wraps the provided ResponseWriter with gzip compression
+// w - http.ResponseWriter to wrap
+// returns a new CompressWriter instance
 func NewCompressWriter(w http.ResponseWriter) *CompressWriter {
 	return &CompressWriter{
 		ResponseWriter: w,

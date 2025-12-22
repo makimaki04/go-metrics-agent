@@ -12,6 +12,7 @@ import (
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 )
 
+//Agent - struct for the agent
 type Agent struct {
 	cfg       agentconfig.Config
 	storage   *LocalStorage
@@ -26,6 +27,8 @@ type Agent struct {
 	cancel        context.CancelFunc
 }
 
+//NewAgent - method for creating a new agent
+//create a new agent
 func NewAgent(cfg agentconfig.Config) *Agent {
 	url := fmt.Sprintf(`http://%s`, cfg.Address)
 	storage := NewLocalStorage()
@@ -48,6 +51,8 @@ func NewAgent(cfg agentconfig.Config) *Agent {
 	}
 }
 
+//Run - method for running the agent
+//run the agent in separate goroutines
 func (a *Agent) Run() {
 	go a.runRuntimeCollector()
 	go a.runSysCollector()
@@ -63,12 +68,16 @@ func (a *Agent) Run() {
 	fmt.Println("Agent was shutdown")
 }
 
+//Stop - method for stopping the agent
+//stop the agent
 func (a *Agent) Stop() {
 	a.cancel()
 	a.collectTicker.Stop()
 	a.sendTicker.Stop()
 }
 
+//runRuntimeCollector - method for running the runtime collector
+//run the runtime metrics collector
 func (a *Agent) runRuntimeCollector() {
 	for {
 		select {
@@ -80,6 +89,8 @@ func (a *Agent) runRuntimeCollector() {
 	}
 }
 
+//runSysCollector - method for running the system collector
+//run the system metrics collector
 func (a *Agent) runSysCollector() {
 	for {
 		select {
@@ -91,6 +102,8 @@ func (a *Agent) runSysCollector() {
 	}
 }
 
+//runSender - method for running the sender
+//run the sender
 func (a *Agent) runSender() {
 	defer close(a.metricsCh)
 	for {
@@ -107,6 +120,8 @@ func (a *Agent) runSender() {
 	}
 }
 
+//worker - method for running the worker
+//run the worker that collects metrics and sends them to the server
 func (a *Agent) worker() {
 	defer a.wg.Done()
 
