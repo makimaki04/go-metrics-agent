@@ -77,8 +77,8 @@ func (d *DBStorage) SetGauge(name string, value float64) error {
 // get the value of the gauge
 // if error, return error
 // if success, return the value of the gauge
-func (d *DBStorage) GetGauge(name string) (float64, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+func (d *DBStorage) GetGauge(ctx context.Context, name string) (float64, bool) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	var value float64

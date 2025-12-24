@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -19,7 +20,7 @@ import (
 type Repository interface {
 	SetGauge(name string, value float64) error
 	SetCounter(name string, value int64) error
-	GetGauge(name string) (float64, bool)
+	GetGauge(ctx context.Context,name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
 	GetAllGauges() (map[string]float64, error)
 	GetAllCounters() (map[string]int64, error)

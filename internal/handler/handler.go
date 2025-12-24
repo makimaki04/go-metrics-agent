@@ -161,7 +161,7 @@ func (h *Handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		value = fmt.Sprintf(`%v`, m)
 	case models.Gauge:
-		m, ok := h.service.GetGauge(metric.ID)
+		m, ok := h.service.GetGauge(r.Context(), metric.ID)
 		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return
@@ -279,7 +279,7 @@ func (h *Handler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.WithValue(context.Background(), observer.ReqIDKey, getClientID(r))
+	ctx := context.WithValue(r.Context(), observer.ReqIDKey, getClientID(r))
 	if err := h.service.UpdateMetricBatch(ctx, metrics); err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(`{"error": "%v"}`, err))
 		return
@@ -317,7 +317,7 @@ func (h *Handler) PostMetricInfo(w http.ResponseWriter, r *http.Request) {
 		}
 		metric.Delta = &d
 	case models.Gauge:
-		v, ok := h.service.GetGauge(metric.ID)
+		v, ok := h.service.GetGauge(r.Context(), metric.ID)
 		if !ok {
 			respondWithError(w, http.StatusNotFound, `{"error": "invalid metric"}`)
 			return

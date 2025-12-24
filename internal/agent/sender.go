@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 
 	"github.com/go-resty/resty/v2"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
@@ -107,7 +108,7 @@ func (s Sender) SendMetricsV2() error {
 //if error, return error
 //if success, return nil
 func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
-	url := fmt.Sprintf("%s/updates", s.baseURL)
+	url := path.Join("%s/updates", s.baseURL)
 	metrics := s.storage.GetAll()
 	batchCopy := batch
 

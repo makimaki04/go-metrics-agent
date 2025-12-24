@@ -31,7 +31,7 @@ import (
 type MetricsService interface {
 	UpdateMetric(ctx context.Context, metric models.Metrics) error
 	UpdateGauge(name string, value float64) error
-	GetGauge(name string) (float64, bool)
+	GetGauge(ctx context.Context,name string) (float64, bool)
 	GetAllGauges() (map[string]float64, error)
 	UpdateCounter(name string, value int64) error
 	GetCounter(name string) (int64, bool)
@@ -128,9 +128,9 @@ func (s *Service) UpdateGauge(name string, value float64) error {
 // get the value of the gauge
 // if error, return error
 // if success, return the value of the gauge
-func (s *Service) GetGauge(name string) (float64, bool) {
+func (s *Service) GetGauge(ctx context.Context, name string) (float64, bool) {
 	value, err := retryValue(func() (float64, error) {
-		v, ok := s.storage.GetGauge(name)
+		v, ok := s.storage.GetGauge(ctx, name)
 		if !ok {
 			return 0, fmt.Errorf("metric %q not found", name)
 		}

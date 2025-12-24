@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -30,7 +31,7 @@ func (m *MemStorage) SetGauge(name string, value float64) error {
 //get the value of the gauge
 //if error, return error
 //if success, return the value of the gauge
-func (m *MemStorage) GetGauge(name string) (float64, bool) {
+func (m *MemStorage) GetGauge(ctx context.Context, name string) (float64, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

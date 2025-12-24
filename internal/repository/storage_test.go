@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ func TestMemStorage_SetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetGauge(tt.input.name, tt.input.value)
-			value, ok := storage.GetGauge(tt.input.name)
+			value, ok := storage.GetGauge(context.Background(),tt.input.name)
 			assert.True(t, ok, "Gauge value should exist")
 			assert.Equal(t, tt.input.value, value)
 		})
@@ -134,7 +135,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := NewStorage()
 			storage.SetGauge(tt.input.name, tt.input.value)
-			value, ok := storage.GetGauge(tt.key)
+			value, ok := storage.GetGauge(context.Background(), tt.key)
 			assert.Equal(t, tt.wantOk, ok)
 			assert.Equal(t, tt.wantValue, value)
 		})
