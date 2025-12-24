@@ -25,6 +25,6 @@ func main() {
 		<-ctx.Done()
 		agent.Stop()
 	}()
-	
+
 	agent.Run()
 }

@@ -10,11 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// DBStorage - struct for the database storage
 type DBStorage struct {
 	db     *sql.DB
 	logger *zap.Logger
 }
 
+// Constants for the database storage
 const (
 	insertGaugeQuery = `
 		INSERT INTO metrics (name, metric_type, gauge_value)
@@ -54,6 +56,10 @@ const (
 	`
 )
 
+// SetGauge - method for setting a gauge
+// set the value of the gauge
+// if error, return error
+// if success, return nil
 func (d *DBStorage) SetGauge(name string, value float64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -67,8 +73,12 @@ func (d *DBStorage) SetGauge(name string, value float64) error {
 	return nil
 }
 
-func (d *DBStorage) GetGauge(name string) (float64, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+// GetGauge - method for getting a gauge
+// get the value of the gauge
+// if error, return error
+// if success, return the value of the gauge
+func (d *DBStorage) GetGauge(ctx context.Context, name string) (float64, bool) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	var value float64
@@ -87,6 +97,10 @@ func (d *DBStorage) GetGauge(name string) (float64, bool) {
 	return value, true
 }
 
+// GetAllGauges - method for getting all gauges
+// get all the gauges
+// if error, return error
+// if success, return the value of the gauges
 func (d *DBStorage) GetAllGauges() (map[string]float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -116,6 +130,10 @@ func (d *DBStorage) GetAllGauges() (map[string]float64, error) {
 	return result, nil
 }
 
+// SetCounter - method for setting a counter
+// set the value of the counter
+// if error, return error
+// if success, return nil
 func (d *DBStorage) SetCounter(name string, value int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -128,6 +146,10 @@ func (d *DBStorage) SetCounter(name string, value int64) error {
 	return nil
 }
 
+// GetCounter - method for getting a counter
+// get the value of the counter
+// if error, return false
+// if success, return the value of the counter and true
 func (d *DBStorage) GetCounter(name string) (int64, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -148,6 +170,10 @@ func (d *DBStorage) GetCounter(name string) (int64, bool) {
 	return value, true
 }
 
+// GetAllCounters - method for getting all counters
+// get all the counters
+// if error, return error
+// if success, return the value of the counters
 func (d *DBStorage) GetAllCounters() (map[string]int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -177,6 +203,10 @@ func (d *DBStorage) GetAllCounters() (map[string]int64, error) {
 	return result, nil
 }
 
+// SetMetricBatch - method for setting a batch of metrics
+// set the value of the metrics
+// if error, return error
+// if success, return nil
 func (d *DBStorage) SetMetricBatch(metrics []models.Metrics) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -221,6 +251,7 @@ func (d *DBStorage) SetMetricBatch(metrics []models.Metrics) error {
 	return tx.Commit()
 }
 
+// Ping - method for pinging the database
 func (d *DBStorage) Ping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

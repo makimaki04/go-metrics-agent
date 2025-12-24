@@ -137,9 +137,9 @@ func TestLocalStorage_GetAll(t *testing.T) {
 		metric models.Metrics
 	}
 	tests := []struct {
-		name   string
-		args   []args
-		want   map[string]models.Metrics
+		name string
+		args []args
+		want map[string]models.Metrics
 	}{
 		{
 			name: "Get gauge simple test",
@@ -162,17 +162,17 @@ func TestLocalStorage_GetAll(t *testing.T) {
 				},
 			},
 			want: map[string]models.Metrics{
-				"CPU" : {
+				"CPU": {
 					ID:    "CPU",
 					MType: "gauge",
 					Value: &v,
 				},
-				"requests" : {
+				"requests": {
 					ID:    "requests",
 					MType: "counter",
 					Delta: &d,
 				},
-			}, 
+			},
 		},
 	}
 

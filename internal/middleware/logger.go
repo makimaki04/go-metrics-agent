@@ -7,6 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
+//WithLogging - middleware for logging the request
+//logging request information
+//shows the request URI, method, headers, status, size, and duration
 func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -14,18 +17,18 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 		method := r.Method
 		headers := r.Header.Get("Accept-Encoding")
 
-		responseData := &responseData {
+		responseData := &responseData{
 			status: 0,
-			size: 0,
+			size:   0,
 		}
 
-		lw := loggingResponseWriter {
+		lw := loggingResponseWriter{
 			ResponseWriter: w,
-			responseData: responseData,
+			responseData:   responseData,
 		}
 
 		h(&lw, r)
-		
+
 		duration := time.Since(start)
 
 		logger.Sugar().Infoln(
@@ -44,7 +47,7 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 type (
 	responseData struct {
 		status int
-		size int
+		size   int
 	}
 
 	loggingResponseWriter struct {

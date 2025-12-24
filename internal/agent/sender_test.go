@@ -39,15 +39,15 @@ func TestSender_SendMetrics(t *testing.T) {
 	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedRequests = append(receivedRequests, struct{
-			Method string
-			Path string
+		receivedRequests = append(receivedRequests, struct {
+			Method  string
+			Path    string
 			Headers http.Header
-			}{
-				Method: r.Method,
-				Path: r.URL.Path,
-				Headers: r.Header.Clone(),
-			})
+		}{
+			Method:  r.Method,
+			Path:    r.URL.Path,
+			Headers: r.Header.Clone(),
+		})
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
 	}))

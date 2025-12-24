@@ -13,6 +13,10 @@ import (
 //go:embed migration_files/*.sql
 var migrationsDir embed.FS
 
+//RunMigration - method for running the migrations
+//run the migrations
+//if error, return error
+//if success, return nil
 func RunMigration(dsn string) error {
 	d, err := iofs.New(migrationsDir, "migration_files")
 	if err != nil {
@@ -22,11 +26,11 @@ func RunMigration(dsn string) error {
 	m, err := migrate.NewWithSourceInstance("iofs", d, dsn)
 
 	if err != nil {
-		return  fmt.Errorf("failed to return a new migrate: %w", err)
+		return fmt.Errorf("failed to return a new migrate: %w", err)
 	}
 
 	if err := m.Up(); err != nil {
-		if !errors.Is(err,  migrate.ErrNoChange) {
+		if !errors.Is(err, migrate.ErrNoChange) {
 			return fmt.Errorf("failed to load migrations: %w", err)
 		}
 	}

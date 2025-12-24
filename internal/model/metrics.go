@@ -1,15 +1,17 @@
 package models
 
+// Constants for the metric types
 const (
 	Counter = "counter"
 	Gauge   = "gauge"
 )
 
-// NOTE: Не усложняем пример, вводя иерархическую вложенность структур.
-// Органичиваясь плоской моделью.
-// Delta и Value объявлены через указатели,
-// что бы отличать значение "0", от не заданного значения
-// и соответственно не кодировать в структуру.
+// Metrics - struct for metrics
+// ID - id of the metric
+// MType - type of the metric
+// Delta - delta of the metric
+// Value - value of the metric
+// Hash - hash of the metric
 type Metrics struct {
 	ID    string   `json:"id"`
 	MType string   `json:"type"`

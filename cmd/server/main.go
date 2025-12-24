@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
+	"github.com/makimaki04/go-metrics-agent.git/internal/observer"
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
@@ -50,13 +54,15 @@ func main() {
 		logger.Info("In-memory storage initialized")
 	}
 
+	InitObservers(mService, logger)
+
 	handler := handler.NewHandler(mService, cfg.KEY)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.GetAllMetrics), handlersLogger))
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetrcInfo), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PostMetricInfo), handlersLogger))
 			r.Route("/{MType}/{ID}", func(r chi.Router) {
 				r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.HandleReq), handlersLogger))
 			})
@@ -76,10 +82,39 @@ func main() {
 
 	})
 
-	err := http.ListenAndServe(cfg.Address, r)
-	if err != nil {
-		panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+	pprofServer := &http.Server{
+		Addr: cfg.PprofServer,
 	}
+
+	APIServer := &http.Server{
+		Addr:    cfg.Address,
+		Handler: r,
+	}
+
+	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	go func() {
+		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Sugar().Warnf("pprof server failed to start on %s: %w", cfg.PprofServer, err)
+		}
+	}()
+
+	go func() {
+		if err := APIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+		}
+	}()
+
+	<-signalctx.Done()
+	shutDownCtx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
+	defer cancel()
+
+	APIServer.Shutdown(shutDownCtx)
+	pprofServer.Shutdown(shutDownCtx)
 }
 
 func loadMetricsFromFile(path string, service service.MetricsService, logger *zap.Logger) {
@@ -195,5 +230,27 @@ func initFileStorage(service service.MetricsService, logger *zap.Logger) {
 				saveMetricsToFile(cfg.FilePath, service, logger)
 			}
 		}()
+	}
+}
+
+func InitObservers(service service.MetricsService, logger *zap.Logger) {
+	if cfg.AuditFile != "" {
+		fObs := &observer.FileObserver{
+			FilePath: cfg.AuditFile,
+			Logger:   logger,
+		}
+
+		service.RegisterObserver(fObs)
+		logger.Info("file observer successfully registered in service")
+	}
+
+	if cfg.AuditURL != "" {
+		httpObs := &observer.HTTPObserver{
+			URL:    cfg.AuditURL,
+			Logger: logger,
+		}
+
+		service.RegisterObserver(httpObs)
+		logger.Info("http observer successfully registered in service")
 	}
 }

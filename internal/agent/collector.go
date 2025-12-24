@@ -11,19 +11,29 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
+//Collector - struct for the collector
+//storage - metric storage
+//pollCount - poll count atomic integer metric
 type Collector struct {
 	storage   CollectorStorageInterface
 	pollCount atomic.Int64
 }
 
+//CollectorStorageInterface - interface for the collector storage
+//SetMetric - method for setting a metric
 type CollectorStorageInterface interface {
 	SetMetric(name string, metric models.Metrics)
 }
 
+//NewCollector - method for creating a new collector
 func NewCollector(storage CollectorStorageInterface) *Collector {
 	return &Collector{storage: storage}
 }
 
+//CollectRuntimeMetrics - method for collecting runtime metrics
+//collect the runtime metrics
+//increment poll count 
+//set random value for RandomValue metric
 func (c *Collector) CollectRuntimeMetrics() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
@@ -83,30 +93,36 @@ func (c *Collector) CollectRuntimeMetrics() {
 	})
 }
 
+//ResetPollCount - method for resetting the poll count
+//reset the poll count to 0
 func (c *Collector) ResetPollCount() {
 	c.pollCount.Store(0)
 }
 
+//CollectSysMetrics - method for collecting system metrics
+//collect the system metrics
+//set total memory and free memory metrics
+//set CPU utilization metric
 func (c *Collector) CollectSysMetrics() {
-	v,_ := mem.VirtualMemory()
+	v, _ := mem.VirtualMemory()
 	totalMemory := float64(v.Total)
 	freeMemory := float64(v.Free)
 	CPUutilization1, _ := cpu.Percent(time.Second, false)
 
 	c.storage.SetMetric("TotalMemory", models.Metrics{
-		ID: "TotalMemory",
+		ID:    "TotalMemory",
 		MType: "gauge",
 		Value: &totalMemory,
 	})
 
 	c.storage.SetMetric("FreeMemory", models.Metrics{
-		ID: "FreeMemory",
+		ID:    "FreeMemory",
 		MType: "gauge",
 		Value: &freeMemory,
 	})
 
 	c.storage.SetMetric("CPUutilization1", models.Metrics{
-		ID: "CPUutilization1",
+		ID:    "CPUutilization1",
 		MType: "gauge",
 		Value: &CPUutilization1[0],
 	})
