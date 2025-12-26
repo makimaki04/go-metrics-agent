@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -102,7 +103,7 @@ func main() {
 
 	go func() {
 		if err := APIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+			log.Fatal(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
 	}()
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 
 	"github.com/caarlos0/env"
 )
@@ -34,7 +34,7 @@ func setConfig() {
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(err)
+		fmt.Printf("could't parse config: %v", err)
 	}
 }
 
