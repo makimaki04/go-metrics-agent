@@ -24,6 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
+
 func main() {
 	setConfig()
 
@@ -94,6 +98,10 @@ func main() {
 
 	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 
 	go func() {
 		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
