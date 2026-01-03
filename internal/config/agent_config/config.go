@@ -2,7 +2,7 @@ package agentconfig
 
 import (
 	"flag"
-	"log"
+	"fmt"
 
 	"github.com/caarlos0/env"
 )
@@ -26,7 +26,7 @@ func SetConfig() Config {
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(err)
+		fmt.Printf("could't parse config: %v", err)
 	}
 
 	return cfg

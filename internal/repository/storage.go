@@ -9,6 +9,7 @@ import (
 )
 
 //MemStorage - struct for the memory storage
+// generate:reset
 type MemStorage struct {
 	gauges   map[string]float64
 	counters map[string]int64

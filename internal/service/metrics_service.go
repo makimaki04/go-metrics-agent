@@ -43,6 +43,7 @@ type MetricsService interface {
 }
 
 // Service - struct for the metrics service
+// generate:reset
 type Service struct {
 	storage   repository.Repository
 	logger    *zap.Logger

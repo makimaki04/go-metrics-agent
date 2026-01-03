@@ -11,6 +11,7 @@ import (
 )
 
 // DBStorage - struct for the database storage
+// generate:reset
 type DBStorage struct {
 	db     *sql.DB
 	logger *zap.Logger

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -22,6 +23,10 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
 )
+
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
 
 func main() {
 	setConfig()
@@ -94,6 +99,10 @@ func main() {
 	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	go func() {
 		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Sugar().Warnf("pprof server failed to start on %s: %w", cfg.PprofServer, err)
@@ -102,7 +111,7 @@ func main() {
 
 	go func() {
 		if err := APIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
+			log.Fatal(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
 	}()
 

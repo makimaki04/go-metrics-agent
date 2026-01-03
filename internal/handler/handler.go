@@ -21,6 +21,7 @@ import (
 )
 
 // Handler - struct for handling requests
+// generate:reset
 type Handler struct {
 	service service.MetricsService
 	key     []byte
