@@ -17,6 +17,7 @@ type config struct {
 	AuditFile   string `env:"AUDIT_FILE"`
 	AuditURL    string `env:"AUDIT_URL"`
 	PprofServer string `env:"PPROF_SERVER"`
+	CryptoKey   string `env:"CRYPTO_KEY"`
 }
 
 var cfg config
@@ -31,6 +32,7 @@ func setConfig() {
 	flag.StringVar(&cfg.AuditFile, "audit-file", "", "audit file address")
 	flag.StringVar(&cfg.AuditURL, "audit-url", "", "audit url")
 	flag.StringVar(&cfg.PprofServer, "p", ":6060", "pprof server port")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "crypto-key file path")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

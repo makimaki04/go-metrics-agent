@@ -34,7 +34,7 @@ func NewAgent(cfg agentconfig.Config) *Agent {
 	storage := NewLocalStorage()
 	collector := NewCollector(storage)
 	client := resty.New()
-	sender := NewSender(client, url, storage, cfg.Key)
+	sender := NewSender(client, url, storage, cfg.Key, cfg.CryptoKey)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

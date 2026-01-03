@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/makimaki04/go-metrics-agent.git/internal/crypto"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
@@ -23,6 +25,10 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
 )
+
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
 
 func main() {
 	setConfig()
@@ -55,6 +61,17 @@ func main() {
 		logger.Info("In-memory storage initialized")
 	}
 
+	var privateKey *rsa.PrivateKey
+	if cfg.CryptoKey != "" {
+		key, err := crypto.LoadCryptoKey(cfg.CryptoKey)
+		if err != nil {
+			logger.Fatal("Failed to load private key", zap.Error(err))
+		}
+		privateKey = key
+		logger.Info("Private key loaded successfully")
+	} else {
+		logger.Info("No crypto key specified, running without decryption")
+	}
 	InitObservers(mService, logger)
 
 	handler := handler.NewHandler(mService, cfg.KEY)
@@ -69,7 +86,7 @@ func main() {
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetric), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetric)), handlersLogger))
 			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
 				r.Post("/", middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
@@ -78,7 +95,7 @@ func main() {
 			r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
 		})
 		r.Route("/updates", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetricBatch), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetricBatch)), handlersLogger))
 		})
 
 	})
@@ -94,6 +111,10 @@ func main() {
 
 	signalctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 
 	go func() {
 		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

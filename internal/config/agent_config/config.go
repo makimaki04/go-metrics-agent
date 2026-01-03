@@ -13,6 +13,7 @@ type Config struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 	Key            string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	CryptoKey      string `env:"CRYPTO_KEY"`
 }
 
 func SetConfig() Config {
@@ -23,6 +24,7 @@ func SetConfig() Config {
 	flag.IntVar(&cfg.PollInterval, "p", 2, "Poll interval in seconds")
 	flag.StringVar(&cfg.Key, "k", "", "Key value")
 	flag.IntVar(&cfg.RateLimit, "l", 3, "Rate limit value")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "crypto-key file path")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

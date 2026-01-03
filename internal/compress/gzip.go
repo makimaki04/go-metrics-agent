@@ -38,7 +38,7 @@ func (g *GzipWriterWrapper) Writer() *gzip.Writer {
 }
 
 var gzipWriterPool = pool.New[*GzipWriterWrapper](func() *GzipWriterWrapper {
-	return &GzipWriterWrapper{writer: new(gzip.Writer)}
+	return &GzipWriterWrapper{writer: gzip.NewWriter(io.Discard)}
 })
 
 // AcquireWriter - acquires a gzip.Writer from the pool and resets it for use
