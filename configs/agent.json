@@ -1,0 +1,5 @@
+{
+    "address": "localhost:8080",
+    "poll_interval": 1,
+    "crypto_key": "public_key.pem"
+}

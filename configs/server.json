@@ -1,0 +1,8 @@
+{
+    "address": ":8080",
+    "restore": true,
+    "store_interval": 10,
+    "store_file": "/data/audit_file.json",
+    "database_dsn": "postgres://metrics_user:password@localhost:5432/metrics_db?sslmode=disable",
+    "crypto_key": "/private_key.pem"
+}
