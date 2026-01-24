@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,7 +17,11 @@ var buildDate = "N/A"
 var buildCommit = "N/A"
 
 func main() {
-	cfg := agentconfig.SetConfig()
+	cfg, err := agentconfig.SetConfig()
+	if err != nil {
+		log.Fatalf("couldn't load agent config: %v", err)
+	}
+
 	if strings.HasPrefix(cfg.Address, ":") {
 		cfg.Address = "localhost" + cfg.Address
 	}

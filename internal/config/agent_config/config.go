@@ -1,13 +1,9 @@
 package agentconfig
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
-	"log"
-	"os"
 
-	"github.com/caarlos0/env"
+	loader "github.com/makimaki04/go-metrics-agent.git/internal/config"
 )
 
 type Config struct {
@@ -20,40 +16,53 @@ type Config struct {
 	Config         string `env:"CONFIG"`
 }
 
-func SetConfig() Config {
-	var cfg Config
-
-	flagSet := flag.NewFlagSet("cfg", flag.ContinueOnError)
-	flagSet.StringVar(&cfg.Config, "config", "", "config path")
-	flagSet.Parse(os.Args[1:])
-
-	cfgPath := os.Getenv("CONFIG")
-	if cfgPath != "" {
-		cfg.Config = cfgPath
+func SetConfig() (Config, error) {
+	cfg := Config{
+		Address:        ":8080",
+		ReportInterval: 10,
+		PollInterval:   2,
+		Key:            "",
+		RateLimit:      3,
+		CryptoKey:      "",
+		Config:         "",
 	}
 
-	if cfg.Config != "" {
-		file, err := os.ReadFile(cfg.Config)
-		if err != nil {
-			log.Fatal("could't read config file", err)
+	var address string
+	var repInt int
+	var pollInt int
+	var key string
+	var rateLim int
+	var cryptoKey string
+
+	bind := func(fs *flag.FlagSet) {
+		fs.StringVar(&address, "a", ":8080", "Server port")
+		fs.IntVar(&repInt, "r", 10, "Report interval in seconds")
+		fs.IntVar(&pollInt, "p", 2, "Poll interval in seconds")
+		fs.StringVar(&key, "k", "", "Key value")
+		fs.IntVar(&rateLim, "l", 3, "Rate limit value")
+		fs.StringVar(&cryptoKey, "crypto-key", "", "crypto-key file path")
+	}
+
+	apply := func(name string) {
+		switch name {
+		case "a":
+			cfg.Address = address
+		case "r":
+			cfg.ReportInterval = repInt
+		case "p":
+			cfg.PollInterval = pollInt
+		case "k":
+			cfg.Key = key
+		case "l":
+			cfg.RateLimit = rateLim
+		case "crypto-key":
+			cfg.CryptoKey = cryptoKey
 		}
-		err = json.Unmarshal(file, &cfg)
-		if err != nil {
-			log.Fatal("could't unmarshal config file", err)
-		}
 	}
 
-	flag.StringVar(&cfg.Address, "a", ":8080", "Server port")
-	flag.IntVar(&cfg.ReportInterval, "r", 10, "Report interval in seconds")
-	flag.IntVar(&cfg.PollInterval, "p", 2, "Poll interval in seconds")
-	flag.StringVar(&cfg.Key, "k", "", "Key value")
-	flag.IntVar(&cfg.RateLimit, "l", 3, "Rate limit value")
-	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "crypto-key file path")
-	flag.Parse()
-
-	if err := env.Parse(&cfg); err != nil {
-		fmt.Printf("could't parse config: %v", err)
+	if err := loader.Load(&cfg, bind, apply); err != nil {
+		return Config{}, err
 	}
 
-	return cfg
+	return cfg, nil
 }

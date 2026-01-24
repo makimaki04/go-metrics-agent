@@ -31,7 +31,10 @@ var buildDate = "N/A"
 var buildCommit = "N/A"
 
 func main() {
-	setConfig()
+	cfg, err := setConfig()
+	if err != nil {
+		log.Fatalf("couldn't load server config: %v", err)
+	}
 
 	logger := zap.Must(zap.NewDevelopment())
 
@@ -46,14 +49,14 @@ func main() {
 
 	switch {
 	case cfg.DSN != "":
-		db, storage := initDBStorage(logger)
+		db, storage := initDBStorage(cfg, logger)
 		defer db.Close()
 		mService = service.NewService(storage, logger)
 		logger.Info("Database storage initialized")
 	case cfg.FilePath != "":
 		storage = repository.NewStorage()
 		mService = service.NewService(storage, logger)
-		initFileStorage(mService, logger)
+		initFileStorage(mService, cfg, logger)
 		logger.Info("Local storage initialized")
 	default:
 		storage = repository.NewStorage()
@@ -63,7 +66,7 @@ func main() {
 
 	var privateKey *rsa.PrivateKey
 	if cfg.CryptoKey != "" {
-		key, err := crypto.LoadCryptoKey(cfg.CryptoKey)
+		key, err := crypto.LoadPrivateKey(cfg.CryptoKey)
 		if err != nil {
 			logger.Fatal("Failed to load private key", zap.Error(err))
 		}
@@ -72,7 +75,7 @@ func main() {
 	} else {
 		logger.Info("No crypto key specified, running without decryption")
 	}
-	InitObservers(mService, logger)
+	InitObservers(mService, cfg, logger)
 
 	handler := handler.NewHandler(mService, cfg.KEY)
 
@@ -217,7 +220,7 @@ func saveMetricsToFile(path string, service service.MetricsService, logger *zap.
 	logger.Info("metrics successfully added to the local storage located in ./data/save.json")
 }
 
-func initDBStorage(logger *zap.Logger) (*sql.DB, repository.Repository) {
+func initDBStorage(cfg Config, logger *zap.Logger) (*sql.DB, repository.Repository) {
 	if err := migrations.RunMigration(cfg.DSN); err != nil {
 		logger.Fatal("Error when starting migrations: %v", zap.Error(err))
 	}
@@ -231,7 +234,7 @@ func initDBStorage(logger *zap.Logger) (*sql.DB, repository.Repository) {
 	return db, repository.NewDBStorage(db, logger)
 }
 
-func initFileStorage(service service.MetricsService, logger *zap.Logger) {
+func initFileStorage(service service.MetricsService, cfg Config, logger *zap.Logger) {
 	dir := filepath.Dir(cfg.FilePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
@@ -255,7 +258,7 @@ func initFileStorage(service service.MetricsService, logger *zap.Logger) {
 	}
 }
 
-func InitObservers(service service.MetricsService, logger *zap.Logger) {
+func InitObservers(service service.MetricsService, cfg Config, logger *zap.Logger) {
 	if cfg.AuditFile != "" {
 		fObs := &observer.FileObserver{
 			FilePath: cfg.AuditFile,
