@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/makimaki04/go-metrics-agent.git/internal/crypto"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
@@ -29,7 +31,10 @@ var buildDate = "N/A"
 var buildCommit = "N/A"
 
 func main() {
-	setConfig()
+	cfg, err := setConfig()
+	if err != nil {
+		log.Fatalf("couldn't load server config: %v", err)
+	}
 
 	logger := zap.Must(zap.NewDevelopment())
 
@@ -44,14 +49,14 @@ func main() {
 
 	switch {
 	case cfg.DSN != "":
-		db, storage := initDBStorage(logger)
+		db, storage := initDBStorage(cfg, logger)
 		defer db.Close()
 		mService = service.NewService(storage, logger)
 		logger.Info("Database storage initialized")
 	case cfg.FilePath != "":
 		storage = repository.NewStorage()
 		mService = service.NewService(storage, logger)
-		initFileStorage(mService, logger)
+		initFileStorage(mService, cfg, logger)
 		logger.Info("Local storage initialized")
 	default:
 		storage = repository.NewStorage()
@@ -59,7 +64,18 @@ func main() {
 		logger.Info("In-memory storage initialized")
 	}
 
-	InitObservers(mService, logger)
+	var privateKey *rsa.PrivateKey
+	if cfg.CryptoKey != "" {
+		key, err := crypto.LoadPrivateKey(cfg.CryptoKey)
+		if err != nil {
+			logger.Fatal("Failed to load private key", zap.Error(err))
+		}
+		privateKey = key
+		logger.Info("Private key loaded successfully")
+	} else {
+		logger.Info("No crypto key specified, running without decryption")
+	}
+	InitObservers(mService, cfg, logger)
 
 	handler := handler.NewHandler(mService, cfg.KEY)
 
@@ -73,7 +89,7 @@ func main() {
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetric), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetric)), handlersLogger))
 			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
 				r.Post("/", middleware.WithLogging(handler.HandleReq, handlersLogger))
 			})
@@ -82,7 +98,7 @@ func main() {
 			r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
 		})
 		r.Route("/updates", func(r chi.Router) {
-			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(handler.UpdateMetricBatch), handlersLogger))
+			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetricBatch)), handlersLogger))
 		})
 
 	})
@@ -204,7 +220,7 @@ func saveMetricsToFile(path string, service service.MetricsService, logger *zap.
 	logger.Info("metrics successfully added to the local storage located in ./data/save.json")
 }
 
-func initDBStorage(logger *zap.Logger) (*sql.DB, repository.Repository) {
+func initDBStorage(cfg Config, logger *zap.Logger) (*sql.DB, repository.Repository) {
 	if err := migrations.RunMigration(cfg.DSN); err != nil {
 		logger.Fatal("Error when starting migrations: %v", zap.Error(err))
 	}
@@ -218,7 +234,7 @@ func initDBStorage(logger *zap.Logger) (*sql.DB, repository.Repository) {
 	return db, repository.NewDBStorage(db, logger)
 }
 
-func initFileStorage(service service.MetricsService, logger *zap.Logger) {
+func initFileStorage(service service.MetricsService, cfg Config, logger *zap.Logger) {
 	dir := filepath.Dir(cfg.FilePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		logger.Fatal("Couldn't create directory for storage file", zap.Error(err))
@@ -242,7 +258,7 @@ func initFileStorage(service service.MetricsService, logger *zap.Logger) {
 	}
 }
 
-func InitObservers(service service.MetricsService, logger *zap.Logger) {
+func InitObservers(service service.MetricsService, cfg Config, logger *zap.Logger) {
 	if cfg.AuditFile != "" {
 		fObs := &observer.FileObserver{
 			FilePath: cfg.AuditFile,

@@ -1,78 +1,62 @@
 package agent
 
 import (
-	"bytes"
-	"compress/gzip"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"path"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/makimaki04/go-metrics-agent.git/internal/compressor"
+	"github.com/makimaki04/go-metrics-agent.git/internal/crypto"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 )
 
-//Sender - struct for the sender
+// Sender - struct for the sender
 type Sender struct {
-	client  *resty.Client
-	baseURL string
-	storage SenderStorageIntreface
-	key     []byte
+	client    *resty.Client
+	baseURL   string
+	storage   SenderStorageIntreface
+	key       []byte
+	publicKey *rsa.PublicKey
 }
 
-//SenderStorageIntreface - interface for the sender storage
-//GetAll - method for getting all metrics from the storage
+// SenderStorageIntreface - interface for the sender storage
+// GetAll - method for getting all metrics from the storage
 type SenderStorageIntreface interface {
 	GetAll() map[string]models.Metrics
 }
 
-//NewSender - method for creating a new sender
-//create a new sender
-//if success, return nil
-func NewSender(client *resty.Client, url string, storage SenderStorageIntreface, key string) *Sender {
-	return &Sender{
-		client:  client,
-		baseURL: url,
-		storage: storage,
-		key:     []byte(key),
-	}
-}
-
-//prepareGzipBody - method for preparing the gzip body
-//prepare the gzip body
-//if error, return error
-//if success, return the gzip body
-func prepareGzipBody(data interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	resp, err := json.Marshal(data)
+// NewSender - method for creating a new sender
+// create a new sender
+// if success, return nil
+func NewSender(client *resty.Client, url string, storage SenderStorageIntreface, key string, publicKeyPath string) (*Sender, error) {
+	publicKey, err := crypto.LoadPublicKey(publicKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("json serialize error")
+		fmt.Printf("load public key error: %v, continuing without encryption", err)
 	}
 
-	w := gzip.NewWriter(&buf)
-	if _, err := w.Write(resp); err != nil {
-		return nil, fmt.Errorf("gzip write error: %v", err)
-	}
-	if err := w.Close(); err != nil {
-		return nil, fmt.Errorf("gzip close error: %v", err)
-	}
-
-	return buf.Bytes(), nil
+	return &Sender{
+		client:    client,
+		baseURL:   url,
+		storage:   storage,
+		key:       []byte(key),
+		publicKey: publicKey,
+	}, err
 }
 
-//SendMetricsV2 - method for sending metrics to the server
-//send the metrics to the server
-//if error, return error
-//if success, return nil
+// SendMetricsV2 - method for sending metrics to the server
+// send the metrics to the server
+// if error, return error
+// if success, return nil
 func (s Sender) SendMetricsV2() error {
 	url := fmt.Sprintf("%s/update", s.baseURL)
 	metrics := s.storage.GetAll()
 
 	for _, m := range metrics {
-		body, err := prepareGzipBody(m)
+		body, err := compressor.PrepareEncryptedGzipBody(m, s.publicKey)
 		if err != nil {
 			return err
 		}
@@ -103,12 +87,12 @@ func (s Sender) SendMetricsV2() error {
 	return nil
 }
 
-//SendMetricsBatch - method for sending metrics batch to the server
-//send the metrics batch to the server
-//if error, return error
-//if success, return nil
+// SendMetricsBatch - method for sending metrics batch to the server
+// send the metrics batch to the server
+// if error, return error
+// if success, return nil
 func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
-	url := path.Join("%s/updates", s.baseURL)
+	url := fmt.Sprintf("%s/updates", s.baseURL)
 	metrics := s.storage.GetAll()
 	batchCopy := batch
 
@@ -131,12 +115,12 @@ func (s Sender) SendMetricsBatch(batch []models.Metrics) error {
 	return nil
 }
 
-//sendBatch - method for sending a batch of metrics to the server
-//send the batch of metrics to the server
-//if error, return error
-//if success, return nil
+// sendBatch - method for sending a batch of metrics to the server
+// send the batch of metrics to the server
+// if error, return error
+// if success, return nil
 func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
-	body, err := prepareGzipBody(batch)
+	body, err := compressor.PrepareEncryptedGzipBody(batch, s.publicKey)
 	if err != nil {
 		return err
 	}
@@ -147,11 +131,7 @@ func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 		SetBody(body)
 
 	if len(s.key) > 0 {
-		json, err := json.Marshal(batch)
-		if err != nil {
-			return err
-		}
-		hash := sha256.Sum256(append(json, s.key...))
+		hash := sha256.Sum256(append(body, s.key...))
 		hex := hex.EncodeToString(hash[:])
 		req.SetHeader("HashSHA256", hex)
 	}
@@ -172,10 +152,10 @@ func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 	return nil
 }
 
-//old realization of sending metrics to the server
-//send the metrics to the server
-//if error, return error
-//if success, return nil
+// old realization of sending metrics to the server
+// send the metrics to the server
+// if error, return error
+// if success, return nil
 func (s Sender) SendMetrics() error {
 	metrics := s.storage.GetAll()
 	for _, m := range metrics {
