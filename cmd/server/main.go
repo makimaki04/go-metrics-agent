@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/makimaki04/go-metrics-agent.git/internal/crypto"
+	grpcserver "github.com/makimaki04/go-metrics-agent.git/internal/grpc_server"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
@@ -24,6 +26,7 @@ import (
 	"github.com/makimaki04/go-metrics-agent.git/internal/repository"
 	"github.com/makimaki04/go-metrics-agent.git/internal/service"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var buildVersion = "N/A"
@@ -79,6 +82,14 @@ func main() {
 
 	handler := handler.NewHandler(mService, cfg.KEY)
 
+	var ipNet *net.IPNet
+	if cfg.TrustedSubnet != "" {
+		_, ipNet, err = net.ParseCIDR(cfg.TrustedSubnet)
+		if err != nil {
+			log.Fatal("couldn't parse trusted subnet string", err)
+		}
+	}
+
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.GetAllMetrics), handlersLogger))
@@ -89,6 +100,7 @@ func main() {
 			})
 		})
 		r.Route("/update", func(r chi.Router) {
+			r.Use(middleware.TrustedSubnet(ipNet))
 			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetric)), handlersLogger))
 			r.Route("/{MType}/{ID}/{value}", func(r chi.Router) {
 				r.Post("/", middleware.WithLogging(handler.HandleReq, handlersLogger))
@@ -98,6 +110,7 @@ func main() {
 			r.Get("/", middleware.WithLogging(middleware.GzipMiddleware(handler.PingDatabase), handlersLogger))
 		})
 		r.Route("/updates", func(r chi.Router) {
+			r.Use(middleware.TrustedSubnet(ipNet))
 			r.Post("/", middleware.WithLogging(middleware.GzipMiddleware(middleware.CryptoMiddleware(privateKey, handler.UpdateMetricBatch)), handlersLogger))
 		})
 
@@ -130,6 +143,21 @@ func main() {
 			log.Fatal(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
 	}()
+	
+	var grpcServer *grpc.Server
+	if cfg.GRPCAddress != "" {
+		s, listener, err := grpcserver.RunGRPC(cfg.GRPCAddress, mService, ipNet, logger)
+		if err != nil {
+			logger.Sugar().Fatalf("grpc server failed to start on %s: %w", cfg.GRPCAddress, err)
+		}
+		grpcServer = s
+
+		go func() {
+			if err := grpcServer.Serve(listener); err != nil {
+				logger.Sugar().Fatalf("grpc server failed to start on %s: %w", cfg.GRPCAddress, err)
+			}
+		}()
+	}
 
 	<-signalctx.Done()
 	shutDownCtx, cancel := context.WithTimeout(
@@ -140,6 +168,10 @@ func main() {
 
 	APIServer.Shutdown(shutDownCtx)
 	pprofServer.Shutdown(shutDownCtx)
+
+	if grpcServer != nil {
+		grpcServer.GracefulStop()
+	}
 }
 
 func loadMetricsFromFile(path string, service service.MetricsService, logger *zap.Logger) {

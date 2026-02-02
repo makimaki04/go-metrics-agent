@@ -286,6 +286,10 @@ func isTemporary(err error) bool {
 		return true
 	}
 
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.DeadlockDetected {
+		return true
+	}
+
 	return false
 }
 

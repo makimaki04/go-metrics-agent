@@ -3,12 +3,14 @@ package agent
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockStorage struct{}
@@ -55,8 +57,10 @@ func TestSender_SendMetrics(t *testing.T) {
 	defer testServer.Close()
 
 	storage := &mockStorage{}
-	sender, _ := NewSender(resty.New(), testServer.URL, storage, "", "")
-
+	u, _ := url.Parse(testServer.URL);
+	address := u.Host
+	sender, err := NewSender(resty.New(), address, storage, "", "")
+	require.NoError(t, err)
 	sender.SendMetrics()
 
 	for _, req := range receivedRequests {

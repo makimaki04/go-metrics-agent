@@ -8,31 +8,35 @@ import (
 )
 
 type Config struct {
-	Address     string `json:"address" env:"ADDRESS"`
-	StoreInt    int    `json:"store_interval" env:"STORE_INTERVAL"`
-	FilePath    string `env:"FILE_STORAGE_PATH"`
-	Restore     bool   `json:"restore" env:"RESTORE"`
-	DSN         string `json:"database_dsn" env:"DATABASE_DSN"`
-	KEY         string `env:"KEY"`
-	AuditFile   string `json:"store_file" env:"AUDIT_FILE"`
-	AuditURL    string `env:"AUDIT_URL"`
-	PprofServer string `env:"PPROF_SERVER"`
-	CryptoKey   string `json:"crypto_key" env:"CRYPTO_KEY"`
-	Config      string `env:"CONFIG"`
+	Address       string `json:"address" env:"ADDRESS"`
+	StoreInt      int    `json:"store_interval" env:"STORE_INTERVAL"`
+	FilePath      string `env:"FILE_STORAGE_PATH"`
+	Restore       bool   `json:"restore" env:"RESTORE"`
+	DSN           string `json:"database_dsn" env:"DATABASE_DSN"`
+	KEY           string `env:"KEY"`
+	AuditFile     string `json:"store_file" env:"AUDIT_FILE"`
+	AuditURL      string `env:"AUDIT_URL"`
+	PprofServer   string `env:"PPROF_SERVER"`
+	CryptoKey     string `json:"crypto_key" env:"CRYPTO_KEY"`
+	Config        string `env:"CONFIG"`
+	TrustedSubnet string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
+	GRPCAddress   string `json:"grpc_address" env:"GRPC_ADDRESS"`
 }
 
 func setConfig() (Config, error) {
 	cfg := Config{
-		Address:     ":8080",
-		StoreInt:    300,
-		FilePath:    "",
-		Restore:     false,
-		DSN:         "",
-		KEY:         "",
-		AuditFile:   "",
-		AuditURL:    "",
-		PprofServer: ":6060",
-		CryptoKey:   "",
+		Address:       ":8080",
+		StoreInt:      300,
+		FilePath:      "",
+		Restore:       false,
+		DSN:           "",
+		KEY:           "",
+		AuditFile:     "",
+		AuditURL:      "",
+		PprofServer:   ":6060",
+		CryptoKey:     "",
+		TrustedSubnet: "",
+		GRPCAddress:   "",
 	}
 
 	var address string
@@ -45,6 +49,8 @@ func setConfig() (Config, error) {
 	var auditURL string
 	var pprof string
 	var cryptoKey string
+	var trustedSubnet string
+	var grpcAddress string
 
 	bind := func(fs *flag.FlagSet) {
 		fs.StringVar(&address, "a", ":8080", "Server port")
@@ -57,6 +63,8 @@ func setConfig() (Config, error) {
 		fs.StringVar(&auditURL, "audit-url", "", "audit url")
 		fs.StringVar(&pprof, "p", ":6060", "pprof server port")
 		fs.StringVar(&cryptoKey, "crypto-key", "", "crypto-key file path")
+		fs.StringVar(&trustedSubnet, "t", "", "trusted subnet string")
+		fs.StringVar(&grpcAddress, "grpc-address", "", "GRPC server address")
 	}
 
 	apply := func(name string) {
@@ -81,6 +89,10 @@ func setConfig() (Config, error) {
 			cfg.PprofServer = pprof
 		case "crypto-key":
 			cfg.CryptoKey = cryptoKey
+		case "t":
+			cfg.TrustedSubnet = trustedSubnet
+		case "grpc-address":
+			cfg.GRPCAddress = grpcAddress
 		}
 	}
 

@@ -1,5 +1,6 @@
 {
-    "address": "localhost:8080",
+    "address": "127.0.0.1:8080",
     "poll_interval": 1,
-    "crypto_key": "public_key.pem"
+    "crypto_key": "public_key.pem",
+    "grpc_address": "127.0.0.1:3200"
 }
