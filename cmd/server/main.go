@@ -18,7 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/makimaki04/go-metrics-agent.git/internal/crypto"
-	grpcserver "github.com/makimaki04/go-metrics-agent.git/internal/grpc_server"
+	grpcserver "github.com/makimaki04/go-metrics-agent.git/internal/grpcsserver"
 	"github.com/makimaki04/go-metrics-agent.git/internal/handler"
 	"github.com/makimaki04/go-metrics-agent.git/internal/middleware"
 	"github.com/makimaki04/go-metrics-agent.git/internal/migrations"
@@ -143,7 +143,7 @@ func main() {
 			log.Fatal(fmt.Errorf("server failed to start on %s: %w", cfg.Address, err))
 		}
 	}()
-	
+
 	var grpcServer *grpc.Server
 	if cfg.GRPCAddress != "" {
 		s, listener, err := grpcserver.RunGRPC(cfg.GRPCAddress, mService, ipNet, logger)

@@ -35,10 +35,9 @@ type ISender interface {
 // NewAgent - method for creating a new agent
 // create a new agent
 func NewAgent(cfg agentconfig.Config) (*Agent, error) {
-	address := cfg.Address
 	storage := NewLocalStorage()
 	collector := NewCollector(storage)
-	client := resty.New()
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	agent := Agent{
@@ -52,21 +51,32 @@ func NewAgent(cfg agentconfig.Config) (*Agent, error) {
 		cancel:        cancel,
 	}
 
-	if cfg.GRPCAddress != "" {
-		sender, err := NewGRPCSender(cfg.GRPCAddress, agent.storage)
-		if err != nil {
-			return &Agent{}, err
-		}
-		agent.sender = sender
-	} else {
-		sender, err := NewSender(client, address, agent.storage, cfg.Key, cfg.CryptoKey)
-		if err != nil {
-			return &Agent{}, err
-		}
-		agent.sender = sender
+	sender, err := initAgentSender(cfg, storage)
+	if err != nil {
+		return &Agent{}, err
 	}
 
+	agent.sender = sender
+
 	return &agent, nil
+}
+
+func initAgentSender(cfg agentconfig.Config, storage *LocalStorage) (ISender, error) {
+	client := resty.New()
+
+	if cfg.GRPCAddress != "" {
+		sender, err := NewGRPCSender(cfg.GRPCAddress, storage)
+		if err != nil {
+			return nil, err
+		}
+		return sender, nil
+	}
+
+	sender, err := NewSender(client, cfg.Address, storage, cfg.Key, cfg.CryptoKey)
+	if err != nil {
+		return nil, err
+	}
+	return sender, nil
 }
 
 // Run - method for running the agent

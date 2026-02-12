@@ -23,7 +23,6 @@ type Sender struct {
 	storage   SenderStorageIntreface
 	key       []byte
 	publicKey *rsa.PublicKey
-	conn      net.Conn
 }
 
 // SenderStorageIntreface - interface for the sender storage
@@ -47,6 +46,7 @@ func NewSender(client *resty.Client, address string, storage SenderStorageIntref
 	if err != nil {
 		return &Sender{}, fmt.Errorf("couldn't deal udp with %s: %v", url, err)
 	}
+	defer conn.Close()
 
 	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
 	if !ok {
@@ -60,12 +60,7 @@ func NewSender(client *resty.Client, address string, storage SenderStorageIntref
 		storage:   storage,
 		key:       []byte(key),
 		publicKey: publicKey,
-		conn:      conn,
 	}, err
-}
-
-func(s *Sender) Close() {
-	s.conn.Close()
 }
 
 // SendMetricsV2 - method for sending metrics to the server
@@ -211,3 +206,5 @@ func (s Sender) SendMetrics() error {
 	}
 	return nil
 }
+
+func (*Sender) Close() {}
