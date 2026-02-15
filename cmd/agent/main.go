@@ -26,7 +26,10 @@ func main() {
 		cfg.Address = "localhost" + cfg.Address
 	}
 
-	agent := agent.NewAgent(cfg)
+	agent, err := agent.NewAgent(cfg)
+	if err != nil {
+		log.Fatalf("agent initializing error: %v", err)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

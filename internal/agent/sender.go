@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
@@ -18,6 +19,7 @@ import (
 type Sender struct {
 	client    *resty.Client
 	baseURL   string
+	IP        string
 	storage   SenderStorageIntreface
 	key       []byte
 	publicKey *rsa.PublicKey
@@ -32,15 +34,29 @@ type SenderStorageIntreface interface {
 // NewSender - method for creating a new sender
 // create a new sender
 // if success, return nil
-func NewSender(client *resty.Client, url string, storage SenderStorageIntreface, key string, publicKeyPath string) (*Sender, error) {
+func NewSender(client *resty.Client, address string, storage SenderStorageIntreface, key string, publicKeyPath string) (*Sender, error) {
+	url := fmt.Sprintf(`http://%s`, address)
+
 	publicKey, err := crypto.LoadPublicKey(publicKeyPath)
 	if err != nil {
 		fmt.Printf("load public key error: %v, continuing without encryption", err)
 	}
 
+	conn, err := net.Dial("udp", address)
+	if err != nil {
+		return &Sender{}, fmt.Errorf("couldn't deal udp with %s: %v", url, err)
+	}
+	defer conn.Close()
+
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return &Sender{}, fmt.Errorf("unexpected local addr type: %T", localAddr)
+	}
+
 	return &Sender{
 		client:    client,
 		baseURL:   url,
+		IP:        localAddr.IP.String(),
 		storage:   storage,
 		key:       []byte(key),
 		publicKey: publicKey,
@@ -64,6 +80,7 @@ func (s Sender) SendMetricsV2() error {
 		req := s.client.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
+			SetHeader("X-Real-IP", s.IP).
 			SetBody(body)
 
 		if len(s.key) > 0 {
@@ -128,6 +145,7 @@ func (s *Sender) sendBatch(url string, batch []models.Metrics) error {
 	req := s.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
+		SetHeader("X-Real-IP", s.IP).
 		SetBody(body)
 
 	if len(s.key) > 0 {
@@ -173,6 +191,7 @@ func (s Sender) SendMetrics() error {
 
 		response, err := s.client.R().
 			SetHeader("Content-Type", "text/plain").
+			SetHeader("X-Real-IP", s.IP).
 			Post(url)
 		if err != nil {
 			log.Printf("failed to send metric %s: %v", m.ID, err)
@@ -187,3 +206,5 @@ func (s Sender) SendMetrics() error {
 	}
 	return nil
 }
+
+func (*Sender) Close() {}

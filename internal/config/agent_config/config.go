@@ -14,17 +14,19 @@ type Config struct {
 	RateLimit      int    `env:"RATE_LIMIT"`
 	CryptoKey      string `json:"crypto_key" env:"CRYPTO_KEY"`
 	Config         string `env:"CONFIG"`
+	GRPCAddress    string `json:"grpc_address" env:"GRPC_ADDRESS"`
 }
 
 func SetConfig() (Config, error) {
 	cfg := Config{
-		Address:        ":8080",
+		Address:        "127.0.0.1:8080",
 		ReportInterval: 10,
 		PollInterval:   2,
 		Key:            "",
 		RateLimit:      3,
 		CryptoKey:      "",
 		Config:         "",
+		GRPCAddress:    "",
 	}
 
 	var address string
@@ -33,14 +35,16 @@ func SetConfig() (Config, error) {
 	var key string
 	var rateLim int
 	var cryptoKey string
+	var grpcAddress string
 
 	bind := func(fs *flag.FlagSet) {
-		fs.StringVar(&address, "a", ":8080", "Server port")
+		fs.StringVar(&address, "a", "127.0.0.1:8080", "Server port")
 		fs.IntVar(&repInt, "r", 10, "Report interval in seconds")
 		fs.IntVar(&pollInt, "p", 2, "Poll interval in seconds")
 		fs.StringVar(&key, "k", "", "Key value")
 		fs.IntVar(&rateLim, "l", 3, "Rate limit value")
 		fs.StringVar(&cryptoKey, "crypto-key", "", "crypto-key file path")
+		fs.StringVar(&grpcAddress, "grpc-address", "", "GRPC server address")
 	}
 
 	apply := func(name string) {
@@ -57,6 +61,8 @@ func SetConfig() (Config, error) {
 			cfg.RateLimit = rateLim
 		case "crypto-key":
 			cfg.CryptoKey = cryptoKey
+		case "grpc-address":
+			cfg.GRPCAddress = grpcAddress
 		}
 	}
 

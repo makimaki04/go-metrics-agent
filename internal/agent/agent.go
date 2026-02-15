@@ -12,12 +12,12 @@ import (
 	models "github.com/makimaki04/go-metrics-agent.git/internal/model"
 )
 
-//Agent - struct for the agent
+// Agent - struct for the agent
 type Agent struct {
 	cfg       agentconfig.Config
 	storage   *LocalStorage
 	collector *Collector
-	sender    *Sender
+	sender    ISender
 
 	collectTicker *time.Ticker
 	sendTicker    *time.Ticker
@@ -27,35 +27,60 @@ type Agent struct {
 	cancel        context.CancelFunc
 }
 
-//NewAgent - method for creating a new agent
-//create a new agent
-func NewAgent(cfg agentconfig.Config) *Agent {
-	url := fmt.Sprintf(`http://%s`, cfg.Address)
+type ISender interface {
+	SendMetricsBatch(batch []models.Metrics) error
+	Close()
+}
+
+// NewAgent - method for creating a new agent
+// create a new agent
+func NewAgent(cfg agentconfig.Config) (*Agent, error) {
 	storage := NewLocalStorage()
 	collector := NewCollector(storage)
-	client := resty.New()
-	sender, err := NewSender(client, url, storage, cfg.Key, cfg.CryptoKey)
-	if err != nil {
-		fmt.Printf("load public key error: %v, continuing without encryption", err)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Agent{
+	agent := Agent{
 		cfg:           cfg,
 		storage:       storage,
 		collector:     collector,
-		sender:        sender,
 		collectTicker: time.NewTicker(time.Duration(cfg.PollInterval) * time.Second),
 		sendTicker:    time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second),
 		metricsCh:     make(chan models.Metrics, cfg.RateLimit),
 		ctx:           ctx,
 		cancel:        cancel,
 	}
+
+	sender, err := initAgentSender(cfg, storage)
+	if err != nil {
+		return &Agent{}, err
+	}
+
+	agent.sender = sender
+
+	return &agent, nil
 }
 
-//Run - method for running the agent
-//run the agent in separate goroutines
+func initAgentSender(cfg agentconfig.Config, storage *LocalStorage) (ISender, error) {
+	client := resty.New()
+
+	if cfg.GRPCAddress != "" {
+		sender, err := NewGRPCSender(cfg.GRPCAddress, storage)
+		if err != nil {
+			return nil, err
+		}
+		return sender, nil
+	}
+
+	sender, err := NewSender(client, cfg.Address, storage, cfg.Key, cfg.CryptoKey)
+	if err != nil {
+		return nil, err
+	}
+	return sender, nil
+}
+
+// Run - method for running the agent
+// run the agent in separate goroutines
 func (a *Agent) Run() {
 	go a.runRuntimeCollector()
 	go a.runSysCollector()
@@ -71,16 +96,17 @@ func (a *Agent) Run() {
 	fmt.Println("Agent was shutdown")
 }
 
-//Stop - method for stopping the agent
-//stop the agent
+// Stop - method for stopping the agent
+// stop the agent
 func (a *Agent) Stop() {
 	a.cancel()
 	a.collectTicker.Stop()
 	a.sendTicker.Stop()
+	a.sender.Close()
 }
 
-//runRuntimeCollector - method for running the runtime collector
-//run the runtime metrics collector
+// runRuntimeCollector - method for running the runtime collector
+// run the runtime metrics collector
 func (a *Agent) runRuntimeCollector() {
 	for {
 		select {
@@ -92,8 +118,8 @@ func (a *Agent) runRuntimeCollector() {
 	}
 }
 
-//runSysCollector - method for running the system collector
-//run the system metrics collector
+// runSysCollector - method for running the system collector
+// run the system metrics collector
 func (a *Agent) runSysCollector() {
 	for {
 		select {
@@ -105,8 +131,8 @@ func (a *Agent) runSysCollector() {
 	}
 }
 
-//runSender - method for running the sender
-//run the sender
+// runSender - method for running the sender
+// run the sender
 func (a *Agent) runSender() {
 	defer close(a.metricsCh)
 	for {
@@ -123,8 +149,8 @@ func (a *Agent) runSender() {
 	}
 }
 
-//worker - method for running the worker
-//run the worker that collects metrics and sends them to the server
+// worker - method for running the worker
+// run the worker that collects metrics and sends them to the server
 func (a *Agent) worker() {
 	defer a.wg.Done()
 
